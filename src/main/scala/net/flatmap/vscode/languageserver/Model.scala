@@ -16,8 +16,9 @@ import io.circe.generic.semiauto._
 case class Position(line: Int, character: Int)
 
 /**
-  * A range in a text document expressed as (zero-based) start and end positions.
-  * A range is comparable to a selection in an editor. Therefore the end position is exclusive.
+  * A range in a text document expressed as (zero-based) start and end
+  * positions. A range is comparable to a selection in an editor. Therefore
+  * the end position is exclusive.
   *
   * @param start The range's start position.
   * @param end   The range's end position.
@@ -33,12 +34,16 @@ case class Range(start: Position, end: Position)
 case class Location(uri: String, range: Range)
 
 /**
-  * Represents a diagnostic, such as a compiler error or warning. Diagnostic objects are only valid in the scope of a resource.
+  * Represents a diagnostic, such as a compiler error or warning. Diagnostic
+  * objects are only valid in the scope of a resource.
   *
   * @param range    The range at which the message applies.
-  * @param severity The diagnostic's severity. Can be omitted. If omitted it is up to the client to interpret diagnostics as error, warning, info or hint.
+  * @param severity The diagnostic's severity. Can be omitted. If omitted it
+  *                 is up to the client to interpret diagnostics as error,
+  *                 warning, info or hint.
   * @param code     The diagnostic's code. Can be omitted.
-  * @param source   A human-readable string describing the source of this diagnostic, e.g. 'typescript' or 'super lint'.
+  * @param source   A human-readable string describing the source of this
+  *                 diagnostic, e.g. 'typescript' or 'super lint'.
   * @param message  The diagnostic's message.
   */
 case class Diagnostic(range: Range,
@@ -48,40 +53,55 @@ case class Diagnostic(range: Range,
                       message: String)
 
 sealed trait DiagnosticSeverity
-
 object DiagnosticSeverity {
+  /** Reports an error. */
   object Error extends DiagnosticSeverity
+  /** Reports a warning. */
   object Warning extends DiagnosticSeverity
+  /** Reports an information. */
   object Information extends DiagnosticSeverity
+  /** Reports a hint. */
   object Hint extends DiagnosticSeverity
+
+  implicit val (encode,decode) = Enum(Error,Warning,Information,Hint)
 }
 
 /**
-  * Represents a reference to a command. Provides a title which will be used to represent a command in the UI. Commands are identitifed using a string identifier and the protocol currently doesn't specify a set of well known commands. So executing a command requires some tool extension code.
+  * Represents a reference to a command. Provides a title which will be used
+  * to represent a command in the UI. Commands are identitifed using a string
+  * identifier and the protocol currently doesn't specify a set of well known
+  * commands. So executing a command requires some tool extension code.
   *
   * @param title     Title of the command, like `save`.
   * @param command   The identifier of the actual command handler.
   * @param arguments Arguments that the command handler should be invoked with.
   */
-case class Command(title: String, command: String, arguments: Option[Array[Json]])
+case class Command(title: String,
+                   command: String,
+                   arguments: Option[Array[Json]])
 
 /**
   * A textual edit applicable to a text document.
   *
-  * @param range   The range of the text document to be manipulated. To insert text into a document create a range where start === end.
-  * @param newText The string to be inserted. For delete operations use an empty string.
+  * @param range   The range of the text document to be manipulated. To
+  *                insert text into a document create a range where start ===
+  *                end.
+  * @param newText The string to be inserted. For delete operations use an
+  *                empty string.
   */
 case class TextEdit(range: Range, newText: String)
 
 /**
-  * A workspace edit represents changes to many resources managed in the workspace.
+  * A workspace edit represents changes to many resources managed in the
+  * workspace.
   *
   * @param changes Holds changes to existing resources.
   */
 case class WorkspaceEdit(changes: Map[String,Array[TextEdit]])
 
 /**
-  * Text documents are identified using a URI. On the protocol level, URIs are passed as strings. The corresponding JSON structure looks like this:
+  * Text documents are identified using a URI. On the protocol level, URIs
+  * are passed as strings. The corresponding JSON structure looks like this:
   *
   * @param uri The text document's URI.
   */
@@ -92,8 +112,8 @@ case class TextDocumentIdentifier(uri: String)
   *
   * @param uri        The text document's URI.
   * @param languageId The text document's language identifier.
-  * @param version    The version number of this document (it will strictly increase after each
-  *                   change, including undo/redo).
+  * @param version    The version number of this document (it will strictly
+  *                   increase after each change, including undo/redo).
   * @param text       The content of the opened text document.
   */
 case class TextDocumentItem(uri: String,
@@ -109,14 +129,6 @@ case class TextDocumentItem(uri: String,
   */
 case class VersionedTextDocumentIdentifier(uri: String, version: Int)
 
-/**
-  * A parameter literal used in requests to pass a text document and a position inside that document.
-  *
-  * @param textDocument The text document.
-  * @param position     The position inside the text document.
-  */
-case class TextDocumentPositionParams(textDocument: TextDocumentIdentifier, position: Position)
-
 sealed trait ClientCapabilities
 object ClientCapabilities {
   object All extends ClientCapabilities
@@ -128,76 +140,210 @@ object ClientCapabilities {
   }
 }
 
+/**
+  * @param capabilities The capabilities the language server provides.
+  */
 case class InitializeResult(capabilities: ServerCapabilities)
 
-abstract class TextDocumentSyncKind(val value: Int)
+/**
+  * @param retry Indicates whether the client should retry to send the
+  *              initilize request after showing the message provided in the
+  *              ResponseError.
+  */
+case class InitializeError(retry: Boolean)
+
+/**
+  * Defines how the host (editor) should sync document changes to the
+  * language  server.
+  */
+sealed trait TextDocumentSyncKind
 object TextDocumentSyncKind {
-  object None extends TextDocumentSyncKind(1)
-  object Full extends TextDocumentSyncKind(2)
-  object Incremental extends TextDocumentSyncKind(3)
-  implicit val encode = new Encoder[TextDocumentSyncKind] {
-    final def apply(a: TextDocumentSyncKind): Json = Json.fromInt(a.value)
-  }
+  /** Documents should not be synced at all. */
+  object None extends TextDocumentSyncKind
+
+  /** Documents are synced by always sending the full content of the
+    * document. */
+  object Full extends TextDocumentSyncKind
+
+  /** Documents are synced by sending the full content on open. After that
+    * only incremental updates to the document are sent. */
+  object Incremental extends TextDocumentSyncKind
+
+  implicit val (encode,decode) = Enum(None,Full,Incremental)
 }
 
-case class CompletionOptions(resolveProvider: Boolean = false, triggerCharacters: Array[String] = Array())
+/**
+  * Completion options.
+  * @param resolveProvider   The server provides support to resolve
+  *                          additional information for a completion item.
+  * @param triggerCharacters The characters that trigger completion
+  *                          automatically.
+  */
+case class CompletionOptions(resolveProvider: Boolean = false,
+                             triggerCharacters: Array[String] = Array())
 
+/**
+  * Signature help options.
+  * @param triggerCharacters The characters that trigger signature help
+  *                          automatically.
+  */
 case class SignatureHelpOptions(triggerCharacters: Array[String] = Array())
 
+/**
+  * Code Lens options.
+  * @param resolveProvider Code lens has a resolve provider as well.
+  */
 case class CodeLensOptions(resolveProvider: Boolean = false)
 
-case class DocumentOnTypeFormattingOptions(firstTriggerCharacter: String, moreTriggerCharacter: Array[String] = Array())
+/**
+  * Format document on type options
+  * @param firstTriggerCharacter A character on which formatting should be
+  *                              triggered, like `}`.
+  * @param moreTriggerCharacter  More trigger characters.
+  */
+case class DocumentOnTypeFormattingOptions(
+  firstTriggerCharacter: String,
+  moreTriggerCharacter: Array[String] = Array())
 
-case class ServerCapabilities(textDocumentSync: Option[TextDocumentSyncKind] = None,
-                              hoverProvider: Boolean = false,
-                              completionProvider: Option[CompletionOptions] = None,
-                              signatureHelpProvider: Option[SignatureHelpOptions] = None,
-                              definitionProvider: Boolean = false,
-                              referenceProvider: Boolean = false,
-                              documentHighlightProvider: Boolean = false,
-                              documentSymbolProvider: Boolean = false,
-                              workspaceSymbolProvider: Boolean = false,
-                              codeActionProvider: Boolean = false,
-                              codeLensProvider: Option[CodeLensOptions] = None,
-                              documentFormattingProvider: Boolean = false,
-                              documentRangeFormattingProvider: Boolean = false,
-                              documentOnTypeFormattingProvider: Option[DocumentOnTypeFormattingOptions] = None,
-                              renameProvider: Boolean = false)
+/**
+  * The server can signal the following capabilities
+  * @param textDocumentSync                 Defines how text documents are
+  *                                         synced.
+  * @param hoverProvider                    The server provides hover support.
+  * @param completionProvider               The server provides completion
+  *                                         support.
+  * @param signatureHelpProvider            The server provides signature help
+  *                                         support.
+  * @param definitionProvider               The server provides goto
+  *                                         definition support.
+  * @param referenceProvider                The server provides find
+  *                                         references support.
+  * @param documentHighlightProvider        The server provides document
+  *                                         highlight support.
+  * @param documentSymbolProvider           The server provides document
+  *                                         symbol support.
+  * @param workspaceSymbolProvider          The server provides workspace
+  *                                         symbol support.
+  * @param codeActionProvider               The server provides code actions.
+  * @param codeLensProvider                 The server provides code lens.
+  * @param documentFormattingProvider       The server provides document
+  *                                         formatting.
+  * @param documentRangeFormattingProvider  The server provides document
+  *                                         range formatting.
+  * @param documentOnTypeFormattingProvider The server provides document
+  *                                         formatting on typing.
+  * @param renameProvider                   The server provides rename support.
+  */
+case class ServerCapabilities(
+  textDocumentSync: Option[TextDocumentSyncKind] = None,
+  hoverProvider: Boolean = false,
+  completionProvider: Option[CompletionOptions] = None,
+  signatureHelpProvider: Option[SignatureHelpOptions] = None,
+  definitionProvider: Boolean = false,
+  referenceProvider: Boolean = false,
+  documentHighlightProvider: Boolean = false,
+  documentSymbolProvider: Boolean = false,
+  workspaceSymbolProvider: Boolean = false,
+  codeActionProvider: Boolean = false,
+  codeLensProvider: Option[CodeLensOptions] = None,
+  documentFormattingProvider: Boolean = false,
+  documentRangeFormattingProvider: Boolean = false,
+  documentOnTypeFormattingProvider: Option[DocumentOnTypeFormattingOptions] = None,
+  renameProvider: Boolean = false)
 
+/**
+  * @param title A short title like 'Retry', 'Open Log' etc.
+  */
 case class MessageActionItem(title: String)
 
-sealed abstract class MessageType(val value: Int)
+sealed trait MessageType
 object MessageType {
-  object Error extends MessageType(1)
-  object Warning extends MessageType(2)
-  object Info extends MessageType(3)
-  object Log extends MessageType(4)
-  implicit val encode = new Encoder[MessageType] {
-    final def apply(a: MessageType) = Json.fromInt(a.value)
-  }
+  /** An error message. */
+  object Error extends MessageType
+  /** A warning message */
+  object Warning extends MessageType
+  /** An information message. */
+  object Info extends MessageType
+  /** A log message. */
+  object Log extends MessageType
+
+  implicit val (encode,decode) = Enum(Error,Warning,Info,Log)
 }
 
-case class TextDocumentContentChangeEvent(range: Option[Range], rangeLength: Option[Int], text: String)
+/**
+  * An event describing a change to a text document. If range and rangeLength
+  * are omitted the new text is considered to be the full content of the
+  * document.
+  *
+  * @param range       The range of the document that changed.
+  * @param rangeLength The length of the range that got replaced.
+  * @param text        The new text of the document.
+  */
+case class TextDocumentContentChangeEvent(
+  range: Option[Range], rangeLength: Option[Int], text: String)
 
-sealed abstract class FileChangeType(val value: Int)
+/**
+  * The file event type.
+  */
+sealed trait FileChangeType
 object FileChangeType {
-  object Created extends FileChangeType(1)
-  object Changed extends FileChangeType(2)
-  object Deleted extends FileChangeType(3)
-  implicit val encode = new Encoder[FileChangeType] {
-    final def apply(a: FileChangeType) = Json.fromInt(a.value)
-  }
-  implicit val decode = new Decoder[FileChangeType] {
-    override def apply(c: HCursor): Result[FileChangeType] = c.as[Int].map {
-      case 1 => Created
-      case 2 => Changed
-      case 3 => Deleted
-    }
-  }
+  /** The file got created */
+  object Created extends FileChangeType
+  /** The file got changed */
+  object Changed extends FileChangeType
+  /** The file got deleted */
+  object Deleted extends FileChangeType
+
+  implicit val (encode,decode) = Enum(Created,Changed,Deleted)
 }
 
+/**
+  * An event describing a file change
+  * @param uri            The file's URI
+  * @param fileChangeType The change type
+  */
 case class FileEvent(uri: String, fileChangeType: FileChangeType)
 
+/**
+  * Represents a collection of [completion items](#CompletionItem) to be
+  * presented in the editor.
+  *
+  * @param isIncomplete This list it not complete. Further typing should
+  *                     result in recomputing this list.
+  */
+case class CompletionList(isIncomplete: Boolean, items: Array[CompletionItem])
+
+/**
+  * @param label         The label of this completion item. By default also
+  *                      the text that is inserted when selecting this
+  *                      completion.
+  * @param kind          The kind of this completion item. Based of the kind
+  *                      an icon is chosen by the editor.
+  * @param detail        A human-readable string with additional information
+  *                      about this item, like type or symbol information.
+  * @param documentation A human-readable string that represents a doc-comment.
+  * @param sortText      A string that shoud be used when comparing this item
+  *                      with other items. When `falsy` the label is used.
+  * @param filterText    A string that should be used when filtering a set of
+  *                      completion items. When `falsy` the label is used.
+  * @param insertText    A string that should be inserted a document when
+  *                      selecting this completion. When `falsy` the label is
+  *                      used.
+  * @param textEdit      An edit which is applied to a document when selecting
+  *                      this completion. When an edit is provided the value of
+  *                      insertText is ignored.
+  * @param additionalTextEdits An optional array of additional text edits
+  *                            that are applied when selecting this
+  *                            completion. Edits must not overlap with the
+  *                            main edit nor with themselves.
+  * @param command       An optional command that is executed *after*
+  *                      inserting this completion. *Note* that additional
+  *                      modifications to the current document should be
+  *                      described with the additionalTextEdits-property.
+  * @param data          An data entry field that is preserved on a completion
+  *                      item between a completion and a completion resolve
+  *                      request.
+  */
 case class CompletionItem(
   label: String,
   kind: Option[CompletionItemKind] = None,
@@ -206,161 +352,212 @@ case class CompletionItem(
   sortText: Option[String] = None,
   filterText: Option[String] = None,
   insertText: Option[String] = None,
-  textEdit: Option[TextEdit],
-  data: Option[Json])
+  textEdit: Option[TextEdit] = None,
+  additionalTextEdits: Option[Seq[TextEdit]] = None,
+  command: Option[Command] = None,
+  data: Option[Json] = None)
 
-sealed abstract class CompletionItemKind(val value: Int)
+/**
+  * The kind of a completion entry.
+  */
+sealed trait CompletionItemKind
 object CompletionItemKind {
-  object Text extends CompletionItemKind(1)
-  object Method extends CompletionItemKind(2)
-  object Function extends CompletionItemKind(3)
-  object Constructor extends CompletionItemKind(4)
-  object Field extends CompletionItemKind(5)
-  object Variable extends CompletionItemKind(6)
-  object Class extends CompletionItemKind(7)
-  object Interface extends CompletionItemKind(8)
-  object Module extends CompletionItemKind(9)
-  object Property extends CompletionItemKind(10)
-  object Unit extends CompletionItemKind(10)
-  object Value extends CompletionItemKind(11)
-  object Enum extends CompletionItemKind(12)
-  object Keyword extends CompletionItemKind(13)
-  object Snippet extends CompletionItemKind(14)
-  object Color extends CompletionItemKind(15)
-  object File extends CompletionItemKind(16)
-  object Reference extends CompletionItemKind(17)
-  implicit val encode = new Encoder[CompletionItemKind] {
-    final def apply(a: CompletionItemKind) = Json.fromInt(a.value)
-  }
-  implicit val decode = new Decoder[CompletionItemKind] {
-    override def apply(c: HCursor): Result[CompletionItemKind] = c.as[Int].map {
-      case 1 => Text
-      case 2 => Method
-      case 3 => Function
-      case 4 => Constructor
-      case 5 => Field
-      case 6 => Variable
-      case 7 => Class
-      case 8 => Interface
-      case 9 => Module
-      case 10 => Property
-      case 10 => Unit
-      case 11 => Value
-      case 12 => Enum
-      case 13 => Keyword
-      case 14 => Snippet
-      case 15 => Color
-      case 16 => File
-      case 17 => Reference
-    }
-  }
+  object Text extends CompletionItemKind
+  object Method extends CompletionItemKind
+  object Function extends CompletionItemKind
+  object Constructor extends CompletionItemKind
+  object Field extends CompletionItemKind
+  object Variable extends CompletionItemKind
+  object Class extends CompletionItemKind
+  object Interface extends CompletionItemKind
+  object Module extends CompletionItemKind
+  object Property extends CompletionItemKind
+  object Unit extends CompletionItemKind
+  object Value extends CompletionItemKind
+  object Enum extends CompletionItemKind
+  object Keyword extends CompletionItemKind
+  object Snippet extends CompletionItemKind
+  object Color extends CompletionItemKind
+  object File extends CompletionItemKind
+  object Reference extends CompletionItemKind
+
+  implicit val (encode,decode) = net.flatmap.vscode.languageserver.Enum(
+    Text,Method,Function,Constructor,Field,Variable,Class,Interface,Module,
+    Property,Unit,Value,Enum,Keyword,Snippet,Color,File,Reference
+  )
 }
 
-case class CompletionList(isIncomplete: Boolean, items: Array[CompletionItem])
-
-sealed trait MarkedString
+/**
+  *  * The marked string is rendered:
+  * - as markdown if it is represented as a string
+  * - as code block of the given langauge if it is represented as a pair of a
+  *   language and a value
+  *
+  * The pair of a language and a value is an equivalent to markdown:
+  * ```${language}
+  * ${value}
+  * ```
+  */
+case class MarkedString(value: String, language: Option[String] = None)
 object MarkedString {
-  case class Plain(text: String) extends MarkedString
-  case class Marked(language: String, value: String) extends MarkedString
   implicit val encode = new Encoder[MarkedString] {
     override final def apply(a: MarkedString): Json = a match {
-      case Plain(t) => Json.fromString(t)
-      case Marked(lang, value) => Json.obj(
+      case MarkedString(t,None) => Json.fromString(t)
+      case MarkedString(value, Some(lang)) => Json.obj(
         "language" -> Json.fromString(lang),
         "value" -> Json.fromString(value)
       )
     }
   }
+  implicit val decode =
+    Decoder.decodeString.map(MarkedString(_)) or
+    Decoder.forProduct2("language","value")(MarkedString.apply)
 }
 
+/**
+  * The result of a hover request.
+  * @param contents The hover's content
+  * @param range    An optional range is a range inside a text document
+  *                 that is used to visualize a hover, e.g. by changing the
+  *                 background color.
+  */
 case class Hover(contents: Array[MarkedString], range: Option[Range])
 
-case class SignatureHelp(signatures: Array[SignatureInformation], activeSignature: Option[Int], activeParameter: Option[Int])
+/**
+  * Signature help represents the signature of something callable. There can
+  * be multiple signature but only one active and only one active parameter.
+  *
+  * @param signatures      One or more signatures.
+  * @param activeSignature The active signature.
+  * @param activeParameter The active parameter of the active signature.
+  */
+case class SignatureHelp(signatures: Seq[SignatureInformation],
+                         activeSignature: Option[Int],
+                         activeParameter: Option[Int])
 
-case class SignatureInformation(label: String, documentation: Option[String], parameters: Option[Array[ParameterInformation]])
+/**
+  * Represents the signature of something callable. A signature can have a
+  * label, like a function-name, a doc-comment, and a set of parameters.
+  * @param label         The label of this signature. Will be shown in the UI.
+  * @param documentation The human-readable doc-comment of this signature.
+  *                      Will be shown in the UI but can be omitted.
+  * @param parameters    The parameters of this signature.
+  */
+case class SignatureInformation(label: String,
+                                documentation: Option[String],
+                                parameters: Option[Seq[ParameterInformation]])
 
-case class ParameterInformation(label: String, documentation: Option[String])
+/**
+  * Represents a parameter of a callable-signature. A parameter can have a
+  * label and a doc-comment.
+  * @param label         The label of this signature. Will be shown in the UI.
+  * @param documentation The human-readable doc-comment of this signature.
+  *                      Will be shown in the UI but can be omitted.
+  */
+case class ParameterInformation(label: String,
+                                documentation: Option[String])
 
+
+/**
+  * @param includeDeclaration Include the declaration of the current symbol.
+  */
 case class ReferenceContext(includeDeclaration: Boolean)
 
 /**
   * A document highlight kind.
   */
-sealed abstract class DocumentHighlightKind(val value: Int)
+sealed trait DocumentHighlightKind
 object DocumentHighlightKind {
-  /**
-    * A textual occurrance.
-    */
-  object Text extends DocumentHighlightKind(1)
+  /** A textual occurrance. */
+  object Text extends DocumentHighlightKind
 
-  /**
-    * Read-access of a symbol, like reading a variable.
-    */
-  object Read extends DocumentHighlightKind(2)
+  /** Read-access of a symbol, like reading a variable. */
+  object Read extends DocumentHighlightKind
 
-  /**
-    * Write-access of a symbol, like writing to a variable.
-    */
-  object Write extends DocumentHighlightKind(3)
+  /** Write-access of a symbol, like writing to a variable. */
+  object Write extends DocumentHighlightKind
 
-  implicit val encode = new Encoder[DocumentHighlightKind] {
-    final def apply(a: DocumentHighlightKind) = Json.fromInt(a.value)
-  }
+  implicit val (encode,decode) = Enum(Text,Read,Write)
 }
 
-case class DocumentHighlight(range: Range, kind: DocumentHighlightKind)
+/**
+  * A document highlight is a range inside a text document which deserves
+  * special attention. Usually a document highlight is visualized by changing
+  * the background color of its range.
+  * @param range The range this highlight applies to.
+  * @param kind  The highlight kind, default is DocumentHighlightKind.Text.
+  */
+case class DocumentHighlight(range: Range, kind: Option[DocumentHighlightKind])
 
-
-sealed abstract class SymbolKind(val value: Int)
+/**
+  * A symbol kind.
+  */
+sealed trait SymbolKind
 object SymbolKind {
-  object File extends SymbolKind(1)
-  object Module extends SymbolKind(2)
-  object Namespace extends SymbolKind(3)
-  object Package extends SymbolKind(4)
-  object Class extends SymbolKind(5)
-  object Method extends SymbolKind(6)
-  object Property extends SymbolKind(7)
-  object Field extends SymbolKind(8)
-  object Constructor extends SymbolKind(9)
-  object Enum extends SymbolKind(10)
-  object Interface extends SymbolKind(11)
-  object Function extends SymbolKind(12)
-  object Variable extends SymbolKind(13)
-  object Constant extends SymbolKind(14)
-  object String extends SymbolKind(15)
-  object Number extends SymbolKind(16)
-  object Boolean extends SymbolKind(17)
-  object Array extends SymbolKind(18)
-  implicit val encode = new Encoder[SymbolKind] {
-    final def apply(a: SymbolKind) = Json.fromInt(a.value)
-  }
+  object File extends SymbolKind
+  object Module extends SymbolKind
+  object Namespace extends SymbolKind
+  object Package extends SymbolKind
+  object Class extends SymbolKind
+  object Method extends SymbolKind
+  object Property extends SymbolKind
+  object Field extends SymbolKind
+  object Constructor extends SymbolKind
+  object Enum extends SymbolKind
+  object Interface extends SymbolKind
+  object Function extends SymbolKind
+  object Variable extends SymbolKind
+  object Constant extends SymbolKind
+  object String extends SymbolKind
+  object Number extends SymbolKind
+  object Boolean extends SymbolKind
+  object Array extends SymbolKind
+
+  implicit val (encode,decode) = net.flatmap.vscode.languageserver.Enum(
+    File,Module,Namespace,Package,Class,Method,Property,Field,Constructor,
+    Enum,Interface,Function,Variable,Constant,String,Number,Boolean,Array)
 }
 
+/**
+  * Represents information about programming constructs like variables, classes,
+  * interfaces etc.
+  *
+  * @param name          The name of this symbol.
+  * @param kind          The kind of this symbol.
+  * @param location      The location of this symbol.
+  * @param containerName The name of the symbol containing this symbol.
+  */
+case class SymbolInformation(name: String,
+                             kind: SymbolKind,
+                             location: Location,
+                             containerName: Option[String])
 
-case class SymbolInformation(name: String, kind: SymbolKind, location: Location, containerName: Option[String])
-
+/**
+  * A code lens represents a command that should be shown along with source
+  * text, like the number of references, a way to run tests, etc.
+  *
+  * A code lens is _unresolved_ when no command is associated to it. For
+  * performance reasons the creation of a code lens and resolving should be
+  * done in two stages.
+  *
+  * @param range   The range in which this code lens is valid. Should only
+  *                span a single line.
+  * @param command The command this code lens represents.
+  * @param data    A data entry field that is preserved on a code lens item
+  *                between a code lens and a code lens resolve request.
+  */
 case class CodeLens(range: Range, command: Option[Command], data: Option[Json])
 
+/**
+  * Contains additional diagnostic information about the context in which a
+  * code action is run.
+  * @param diagnostics An array of diagnostics.
+  */
 case class CodeActionContext(diagnostics: Array[Diagnostic])
-case class FormattingOptions(tabSize: Int, insertSpaces: Boolean)
 
-case class InitializeParams(processId: Int, rootPath: String, initializeOptions: Option[Json], capabilities: ClientCapabilities)
-case class ShowMessageParams(`type`: MessageType, message: String)
-case class ShowMessageRequestParams(`type`: MessageType, message: String, actions: Option[Array[MessageActionItem]])
-case class LogMessageParams(`type`: MessageType, message: String)
-case class DidChangeConfigurationParams(settings: Json)
-case class DidChangeWatchedFilesParams(changes: Array[FileEvent])
-case class DidChangeTextDocumentParams(textDocument: VersionedTextDocumentIdentifier, contentChanges: Array[TextDocumentContentChangeEvent])
-case class DidCloseTextDocumentParams(textDocument: TextDocumentIdentifier)
-case class DidOpenTextDocumentParams(textDocument: TextDocumentItem)
-case class DidSaveTextDocumentParams(textDocument: TextDocumentIdentifier)
-case class PublishDiagnosticsParams(uri: String, diagnostics: Array[Diagnostic])
-case class ReferenceParams(textDocument: TextDocumentIdentifier, position: Position, context: ReferenceContext)
-case class DocumentSymbolParams(textDocument: TextDocumentIdentifier)
-case class WorkspaceSymbolParams(query: String)
-case class CodeActionParams(textDocument: TextDocumentIdentifier, range: Range, context: CodeActionContext)
-case class CodeLensParams(textDocument: TextDocumentIdentifier)
-case class DocumentFormattingParams(textDocument: TextDocumentIdentifier, options: FormattingOptions)
-case class DocumentRangeFormattingParams(textDocument: TextDocumentIdentifier, range: Range, options: FormattingOptions)
-case class DocumentOnTypeFormattingParams(textDocument: TextDocumentIdentifier, position: Position, ch: String, options: FormattingOptions)
-case class RenameParams(textDocument: TextDocumentIdentifier, position: Position, newName: String)
+/**
+  * Value-object describing what options formatting should use.
+  * @param tabSize      Size of a tab in spaces.
+  * @param insertSpaces Prefer spaces over tabs.
+  */
+case class FormattingOptions(tabSize: Int, insertSpaces: Boolean)

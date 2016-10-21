@@ -300,10 +300,10 @@ trait LanguageServer {
   def completionItem: LanguageServer.CompletionItem
 
   @JsonRPCNamespace("workspace/")
-  val workspace: LanguageServer.Workspace
+  def workspace: LanguageServer.Workspace
 
   @JsonRPCNamespace("codeLens/")
-  val codeLens: LanguageServer.CodeLens
+  def codeLens: LanguageServer.CodeLens
 }
 
 /*

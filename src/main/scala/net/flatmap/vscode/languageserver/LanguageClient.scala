@@ -1,40 +1,11 @@
 package net.flatmap.vscode.languageserver
 
-import akka.NotUsed
-import akka.stream.FlowShape
-import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Partition}
 import io.circe.Json
-import net.flatmap.jsonrpc.{Id, Remote, RequestMessage, Response}
+import net.flatmap.jsonrpc._
 
 import scala.concurrent.Future
 
 object LanguageClient {
-  val messageFlow: Flow[Response,RequestMessage,LanguageClient] = {
-    val window = Remote[LanguageClient.Window](Id.discriminated(3,0))
-      .map(_.prefixed("window/"))
-    val telemetry = Remote[LanguageClient.Telemetry](Id.discriminated(3,1))
-      .map(_.prefixed("telemetry/"))
-    val textDocument = Remote[LanguageClient.TextDocument](Id.discriminated(3,2))
-      .map(_.prefixed("textDocument/"))
-
-    Flow.fromGraph(
-      GraphDSL.create(window,telemetry,textDocument)(LanguageClient.apply) {
-        implicit builder => (window,telemetry,textDocument) =>
-          import GraphDSL.Implicits._
-          val in = builder.add(Partition[Response](3,
-            ((x: Response) => x.id) andThen Id.discriminator(3)))
-          val out = builder.add(Merge[RequestMessage](3))
-
-          in ~> window       ~> out
-          in ~> telemetry    ~> out
-          in ~> textDocument ~> out
-
-          FlowShape(in.in,out.out)
-      }
-    )
-  }
-
-
   trait Window {
     /**
       * The show message notification is sent from a server to a client to
@@ -89,8 +60,13 @@ object LanguageClient {
   }
 }
 
-case class LanguageClient(
-  window: LanguageClient.Window,
-  telemetry: LanguageClient.Telemetry,
-  textDocument: LanguageClient.TextDocument
-)
+trait LanguageClient {
+  @JsonRPCNamespace("window/")
+  def window: LanguageClient.Window
+
+  @JsonRPCNamespace("telemetry/")
+  def telemetry: LanguageClient.Telemetry
+
+  @JsonRPCNamespace("textDocument/")
+  def textDocument: LanguageClient.TextDocument
+}

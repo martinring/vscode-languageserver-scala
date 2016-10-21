@@ -1,6 +1,7 @@
 package net.flatmap.vscode.languageserver
 
 import io.circe.Json
+import net.flatmap.jsonrpc.JsonRPCNamespace
 
 import scala.concurrent.Future
 
@@ -292,9 +293,16 @@ trait LanguageServer {
     */
   def exit()
 
-  val textDocument: LanguageServer.TextDocument
-  val completionItem: LanguageServer.CompletionItem
+  @JsonRPCNamespace("textDocument/")
+  def textDocument: LanguageServer.TextDocument
+
+  @JsonRPCNamespace("completionItem/")
+  def completionItem: LanguageServer.CompletionItem
+
+  @JsonRPCNamespace("workspace/")
   val workspace: LanguageServer.Workspace
+
+  @JsonRPCNamespace("codeLens/")
   val codeLens: LanguageServer.CodeLens
 }
 

@@ -27,7 +27,7 @@ object LanguageClient {
       */
     def showMessageRequest(messageType: MessageType,
                            message: String,
-                           actions: Option[Array[MessageActionItem]]):
+                           actions: Option[Seq[MessageActionItem]]):
       Future[MessageActionItem]
 
     /**
@@ -56,7 +56,7 @@ object LanguageClient {
       *                    reported.
       * @param diagnostics An array of diagnostic information items
       */
-    def publishDiagnostics(uri: String, diagnostics: Array[Diagnostic]): Unit
+    def publishDiagnostics(uri: String, diagnostics: Seq[Diagnostic]): Unit
   }
 }
 

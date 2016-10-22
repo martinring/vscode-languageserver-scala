@@ -6,7 +6,7 @@ import net.flatmap.jsonrpc.JsonRPCNamespace
 import scala.concurrent.Future
 
 object LanguageServer {
-  trait TextDocument {
+  trait TextDocumentOperations {
     /**
       * The document open notification is sent from the client to the server
       * to signal newly opened text documents. The document's truth is now
@@ -21,6 +21,7 @@ object LanguageServer {
       * The document change notification is sent from the client to the
       * server to signal changes to a text document. In 2.0 the shape of the
       * params has changed to include proper version numbers and language ids.
+      *
       * @param textDocument   The document that did change. The version
       *                       number points to the version after all provided
       *                       content changes have been applied.
@@ -34,6 +35,7 @@ object LanguageServer {
       * when the document got closed in the client. The document's truth now
       * exists where the document's uri points to (e.g. if the document's uri
       * is a file uri the truth now exists on disk).
+      *
       * @param textDocument The document that was closed.
       */
     def didClose(textDocument: TextDocumentIdentifier)
@@ -218,7 +220,7 @@ object LanguageServer {
                newName: String)
   }
 
-  trait CompletionItem {
+  trait CompletionItemOperations {
     /**
       * The request is sent from the client to the server to resolve
       * additional information for a given completion item.
@@ -236,7 +238,7 @@ object LanguageServer {
                 data: Option[Json]): Future[CompletionItem]
   }
 
-  trait CodeLens {
+  trait CodeLensOperations {
     /**
       * The code lens resolve request is sent from the client to the server
       * to resolve the command for a given code lens item.
@@ -246,7 +248,7 @@ object LanguageServer {
                 data: Option[Json]): Future[CodeLens]
   }
 
-  trait Workspace {
+  trait WorkspaceOperations {
     /**
       * The workspace symbol request is sent from the client to the server to
       * list project-wide symbols matching the query string.
@@ -293,17 +295,17 @@ trait LanguageServer {
     */
   def exit()
 
-  @JsonRPCNamespace("textDocument/")
-  def textDocument: LanguageServer.TextDocument
+  @JsonRPCNamespace(prefix = "textDocument/")
+  def textDocument: LanguageServer.TextDocumentOperations
 
-  @JsonRPCNamespace("completionItem/")
-  def completionItem: LanguageServer.CompletionItem
+  @JsonRPCNamespace(prefix = "completionItem/")
+  def completionItem: LanguageServer.CompletionItemOperations
 
-  @JsonRPCNamespace("workspace/")
-  def workspace: LanguageServer.Workspace
+  @JsonRPCNamespace(prefix = "workspace/")
+  def workspace: LanguageServer.WorkspaceOperations
 
-  @JsonRPCNamespace("codeLens/")
-  def codeLens: LanguageServer.CodeLens
+  @JsonRPCNamespace(prefix = "codeLens/")
+  def codeLens: LanguageServer.CodeLensOperations
 }
 
 /*

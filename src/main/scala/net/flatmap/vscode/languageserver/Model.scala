@@ -1,7 +1,5 @@
 package net.flatmap.vscode.languageserver
 
-import cats.data.Xor
-import io.circe.Decoder.Result
 import io.circe._
 import io.circe.generic.semiauto._
 
@@ -33,6 +31,24 @@ case class Range(start: Position, end: Position)
   */
 case class Location(uri: String, range: Range)
 
+sealed trait DiagnosticCode
+object DiagnosticCode {
+  case class Int(code: scala.Int) extends DiagnosticCode
+  case class String(code: java.lang.String) extends DiagnosticCode
+}
+
+sealed trait DiagnosticSeverity
+object DiagnosticSeverity {
+  /** Reports an error. */
+  object Error extends DiagnosticSeverity
+  /** Reports a warning. */
+  object Warning extends DiagnosticSeverity
+  /** Reports an information. */
+  object Information extends DiagnosticSeverity
+  /** Reports a hint. */
+  object Hint extends DiagnosticSeverity
+}
+
 /**
   * Represents a diagnostic, such as a compiler error or warning. Diagnostic
   * objects are only valid in the scope of a resource.
@@ -47,24 +63,10 @@ case class Location(uri: String, range: Range)
   * @param message  The diagnostic's message.
   */
 case class Diagnostic(range: Range,
-                      severity: Option[Int],
-                      code: Option[Either[Int, String]],
+                      severity: Option[DiagnosticSeverity],
+                      code: Option[DiagnosticCode],
                       source: Option[String],
                       message: String)
-
-sealed trait DiagnosticSeverity
-object DiagnosticSeverity {
-  /** Reports an error. */
-  object Error extends DiagnosticSeverity
-  /** Reports a warning. */
-  object Warning extends DiagnosticSeverity
-  /** Reports an information. */
-  object Information extends DiagnosticSeverity
-  /** Reports a hint. */
-  object Hint extends DiagnosticSeverity
-
-  implicit val (encode,decode) = Enum(Error,Warning,Information,Hint)
-}
 
 /**
   * Represents a reference to a command. Provides a title which will be used
@@ -78,7 +80,7 @@ object DiagnosticSeverity {
   */
 case class Command(title: String,
                    command: String,
-                   arguments: Option[Array[Json]])
+                   arguments: Option[Seq[Json]] = None)
 
 /**
   * A textual edit applicable to a text document.
@@ -97,7 +99,7 @@ case class TextEdit(range: Range, newText: String)
   *
   * @param changes Holds changes to existing resources.
   */
-case class WorkspaceEdit(changes: Map[String,Array[TextEdit]])
+case class WorkspaceEdit(changes: Map[String,Seq[TextEdit]])
 
 /**
   * Text documents are identified using a URI. On the protocol level, URIs
@@ -131,19 +133,8 @@ case class VersionedTextDocumentIdentifier(uri: String, version: Int)
 
 sealed trait ClientCapabilities
 object ClientCapabilities {
-  object All extends ClientCapabilities
-  implicit val encode = new Encoder[ClientCapabilities] {
-    final def apply(a: ClientCapabilities): Json = Json.obj()
-  }
-  implicit val decode = new Decoder[ClientCapabilities] {
-    final def apply(c: HCursor): Decoder.Result[ClientCapabilities] = Xor.right(ClientCapabilities.All)
-  }
+  object Default extends ClientCapabilities
 }
-
-/**
-  * @param capabilities The capabilities the language server provides.
-  */
-case class InitializeResult(capabilities: ServerCapabilities)
 
 /**
   * @param retry Indicates whether the client should retry to send the
@@ -168,8 +159,6 @@ object TextDocumentSyncKind {
   /** Documents are synced by sending the full content on open. After that
     * only incremental updates to the document are sent. */
   object Incremental extends TextDocumentSyncKind
-
-  implicit val (encode,decode) = Enum(None,Full,Incremental)
 }
 
 /**
@@ -179,21 +168,21 @@ object TextDocumentSyncKind {
   * @param triggerCharacters The characters that trigger completion
   *                          automatically.
   */
-case class CompletionOptions(resolveProvider: Boolean = false,
-                             triggerCharacters: Array[String] = Array())
+case class CompletionOptions(resolveProvider: Option[Boolean] = None,
+                             triggerCharacters: Option[Seq[String]] = None)
 
 /**
   * Signature help options.
   * @param triggerCharacters The characters that trigger signature help
   *                          automatically.
   */
-case class SignatureHelpOptions(triggerCharacters: Array[String] = Array())
+case class SignatureHelpOptions(triggerCharacters: Option[Seq[String]] = None)
 
 /**
   * Code Lens options.
   * @param resolveProvider Code lens has a resolve provider as well.
   */
-case class CodeLensOptions(resolveProvider: Boolean = false)
+case class CodeLensOptions(resolveProvider: Option[Boolean] = None)
 
 /**
   * Format document on type options
@@ -203,7 +192,7 @@ case class CodeLensOptions(resolveProvider: Boolean = false)
   */
 case class DocumentOnTypeFormattingOptions(
   firstTriggerCharacter: String,
-  moreTriggerCharacter: Array[String] = Array())
+  moreTriggerCharacter: Option[Seq[String]] = None)
 
 /**
   * The server can signal the following capabilities
@@ -236,20 +225,25 @@ case class DocumentOnTypeFormattingOptions(
   */
 case class ServerCapabilities(
   textDocumentSync: Option[TextDocumentSyncKind] = None,
-  hoverProvider: Boolean = false,
+  hoverProvider: Option[Boolean] = None,
   completionProvider: Option[CompletionOptions] = None,
   signatureHelpProvider: Option[SignatureHelpOptions] = None,
-  definitionProvider: Boolean = false,
-  referenceProvider: Boolean = false,
-  documentHighlightProvider: Boolean = false,
-  documentSymbolProvider: Boolean = false,
-  workspaceSymbolProvider: Boolean = false,
-  codeActionProvider: Boolean = false,
+  definitionProvider: Option[Boolean] = None,
+  referenceProvider: Option[Boolean] = None,
+  documentHighlightProvider: Option[Boolean] = None,
+  documentSymbolProvider: Option[Boolean] = None,
+  workspaceSymbolProvider: Option[Boolean] = None,
+  codeActionProvider: Option[Boolean] = None,
   codeLensProvider: Option[CodeLensOptions] = None,
-  documentFormattingProvider: Boolean = false,
-  documentRangeFormattingProvider: Boolean = false,
+  documentFormattingProvider: Option[Boolean] = None,
+  documentRangeFormattingProvider: Option[Boolean] = None,
   documentOnTypeFormattingProvider: Option[DocumentOnTypeFormattingOptions] = None,
-  renameProvider: Boolean = false)
+  renameProvider: Option[Boolean] = None)
+
+/**
+  * @param capabilities The capabilities the language server provides.
+  */
+case class InitializeResult(capabilities: ServerCapabilities)
 
 /**
   * @param title A short title like 'Retry', 'Open Log' etc.
@@ -266,8 +260,6 @@ object MessageType {
   object Info extends MessageType
   /** A log message. */
   object Log extends MessageType
-
-  implicit val (encode,decode) = Enum(Error,Warning,Info,Log)
 }
 
 /**
@@ -279,8 +271,8 @@ object MessageType {
   * @param rangeLength The length of the range that got replaced.
   * @param text        The new text of the document.
   */
-case class TextDocumentContentChangeEvent(
-  range: Option[Range], rangeLength: Option[Int], text: String)
+case class TextDocumentContentChangeEvent(text: String,
+  range: Option[Range] = None, rangeLength: Option[Int] = None)
 
 /**
   * The file event type.
@@ -293,8 +285,6 @@ object FileChangeType {
   object Changed extends FileChangeType
   /** The file got deleted */
   object Deleted extends FileChangeType
-
-  implicit val (encode,decode) = Enum(Created,Changed,Deleted)
 }
 
 /**
@@ -305,13 +295,29 @@ object FileChangeType {
 case class FileEvent(uri: String, fileChangeType: FileChangeType)
 
 /**
-  * Represents a collection of [completion items](#CompletionItem) to be
-  * presented in the editor.
-  *
-  * @param isIncomplete This list it not complete. Further typing should
-  *                     result in recomputing this list.
+  * The kind of a completion entry.
   */
-case class CompletionList(isIncomplete: Boolean, items: Array[CompletionItem])
+sealed trait CompletionItemKind
+object CompletionItemKind {
+  object Text extends CompletionItemKind
+  object Method extends CompletionItemKind
+  object Function extends CompletionItemKind
+  object Constructor extends CompletionItemKind
+  object Field extends CompletionItemKind
+  object Variable extends CompletionItemKind
+  object Class extends CompletionItemKind
+  object Interface extends CompletionItemKind
+  object Module extends CompletionItemKind
+  object Property extends CompletionItemKind
+  object Unit extends CompletionItemKind
+  object Value extends CompletionItemKind
+  object Enum extends CompletionItemKind
+  object Keyword extends CompletionItemKind
+  object Snippet extends CompletionItemKind
+  object Color extends CompletionItemKind
+  object File extends CompletionItemKind
+  object Reference extends CompletionItemKind
+}
 
 /**
   * @param label         The label of this completion item. By default also
@@ -358,34 +364,14 @@ case class CompletionItem(
   data: Option[Json] = None)
 
 /**
-  * The kind of a completion entry.
+  * Represents a collection of [completion items](#CompletionItem) to be
+  * presented in the editor.
+  *
+  * @param isIncomplete This list it not complete. Further typing should
+  *                     result in recomputing this list.
   */
-sealed trait CompletionItemKind
-object CompletionItemKind {
-  object Text extends CompletionItemKind
-  object Method extends CompletionItemKind
-  object Function extends CompletionItemKind
-  object Constructor extends CompletionItemKind
-  object Field extends CompletionItemKind
-  object Variable extends CompletionItemKind
-  object Class extends CompletionItemKind
-  object Interface extends CompletionItemKind
-  object Module extends CompletionItemKind
-  object Property extends CompletionItemKind
-  object Unit extends CompletionItemKind
-  object Value extends CompletionItemKind
-  object Enum extends CompletionItemKind
-  object Keyword extends CompletionItemKind
-  object Snippet extends CompletionItemKind
-  object Color extends CompletionItemKind
-  object File extends CompletionItemKind
-  object Reference extends CompletionItemKind
-
-  implicit val (encode,decode) = net.flatmap.vscode.languageserver.Enum(
-    Text,Method,Function,Constructor,Field,Variable,Class,Interface,Module,
-    Property,Unit,Value,Enum,Keyword,Snippet,Color,File,Reference
-  )
-}
+case class CompletionList(items: Seq[CompletionItem],
+                          isIncomplete: Boolean = false)
 
 /**
   *  * The marked string is rendered:
@@ -399,20 +385,6 @@ object CompletionItemKind {
   * ```
   */
 case class MarkedString(value: String, language: Option[String] = None)
-object MarkedString {
-  implicit val encode = new Encoder[MarkedString] {
-    override final def apply(a: MarkedString): Json = a match {
-      case MarkedString(t,None) => Json.fromString(t)
-      case MarkedString(value, Some(lang)) => Json.obj(
-        "language" -> Json.fromString(lang),
-        "value" -> Json.fromString(value)
-      )
-    }
-  }
-  implicit val decode =
-    Decoder.decodeString.map(MarkedString(_)) or
-    Decoder.forProduct2("language","value")(MarkedString.apply)
-}
 
 /**
   * The result of a hover request.
@@ -421,19 +393,17 @@ object MarkedString {
   *                 that is used to visualize a hover, e.g. by changing the
   *                 background color.
   */
-case class Hover(contents: Array[MarkedString], range: Option[Range])
+case class Hover(contents: Seq[MarkedString], range: Option[Range])
 
 /**
-  * Signature help represents the signature of something callable. There can
-  * be multiple signature but only one active and only one active parameter.
-  *
-  * @param signatures      One or more signatures.
-  * @param activeSignature The active signature.
-  * @param activeParameter The active parameter of the active signature.
+  * Represents a parameter of a callable-signature. A parameter can have a
+  * label and a doc-comment.
+  * @param label         The label of this signature. Will be shown in the UI.
+  * @param documentation The human-readable doc-comment of this signature.
+  *                      Will be shown in the UI but can be omitted.
   */
-case class SignatureHelp(signatures: Seq[SignatureInformation],
-                         activeSignature: Option[Int],
-                         activeParameter: Option[Int])
+case class ParameterInformation(label: String,
+                                documentation: Option[String])
 
 /**
   * Represents the signature of something callable. A signature can have a
@@ -447,16 +417,18 @@ case class SignatureInformation(label: String,
                                 documentation: Option[String],
                                 parameters: Option[Seq[ParameterInformation]])
 
-/**
-  * Represents a parameter of a callable-signature. A parameter can have a
-  * label and a doc-comment.
-  * @param label         The label of this signature. Will be shown in the UI.
-  * @param documentation The human-readable doc-comment of this signature.
-  *                      Will be shown in the UI but can be omitted.
-  */
-case class ParameterInformation(label: String,
-                                documentation: Option[String])
 
+/**
+  * Signature help represents the signature of something callable. There can
+  * be multiple signature but only one active and only one active parameter.
+  *
+  * @param signatures      One or more signatures.
+  * @param activeSignature The active signature.
+  * @param activeParameter The active parameter of the active signature.
+  */
+case class SignatureHelp(signatures: Seq[SignatureInformation],
+                         activeSignature: Option[Int],
+                         activeParameter: Option[Int])
 
 /**
   * @param includeDeclaration Include the declaration of the current symbol.
@@ -476,8 +448,6 @@ object DocumentHighlightKind {
 
   /** Write-access of a symbol, like writing to a variable. */
   object Write extends DocumentHighlightKind
-
-  implicit val (encode,decode) = Enum(Text,Read,Write)
 }
 
 /**
@@ -487,7 +457,8 @@ object DocumentHighlightKind {
   * @param range The range this highlight applies to.
   * @param kind  The highlight kind, default is DocumentHighlightKind.Text.
   */
-case class DocumentHighlight(range: Range, kind: Option[DocumentHighlightKind])
+case class DocumentHighlight(range: Range,
+                             kind: Option[DocumentHighlightKind])
 
 /**
   * A symbol kind.
@@ -512,10 +483,6 @@ object SymbolKind {
   object Number extends SymbolKind
   object Boolean extends SymbolKind
   object Array extends SymbolKind
-
-  implicit val (encode,decode) = net.flatmap.vscode.languageserver.Enum(
-    File,Module,Namespace,Package,Class,Method,Property,Field,Constructor,
-    Enum,Interface,Function,Variable,Constant,String,Number,Boolean,Array)
 }
 
 /**
@@ -553,7 +520,7 @@ case class CodeLens(range: Range, command: Option[Command], data: Option[Json])
   * code action is run.
   * @param diagnostics An array of diagnostics.
   */
-case class CodeActionContext(diagnostics: Array[Diagnostic])
+case class CodeActionContext(diagnostics: Seq[Diagnostic])
 
 /**
   * Value-object describing what options formatting should use.

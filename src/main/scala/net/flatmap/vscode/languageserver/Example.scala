@@ -3,12 +3,13 @@ package net.flatmap.vscode.languageserver
 import java.nio.charset.StandardCharsets
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, IOResult}
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source, StreamConverters}
+import akka.stream.{ActorMaterializer, FlowShape, IOResult}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Keep, Merge, Sink, Source, StreamConverters}
 import akka.util.ByteString
 import io.circe.Json
 import net.flatmap.jsonrpc
 import net.flatmap.jsonrpc._
+import net.flatmap.jsonrpc.util.TypePartition
 
 import scala.concurrent.{Future, Promise}
 
@@ -20,28 +21,54 @@ object Example extends App{
   implicit val materializer = ActorMaterializer()
   implicit val dispatcher = system.dispatcher
 
-  val in = Source.single(Request(Id.Long(0),"initialize",NamedParameters(Map(
-    "capabilities" -> Json.obj()
-  ))))
+  val msg = Promise[Message]
+  val msg2 = Promise[Message]
+
+  val msgs =
+    Source.fromFuture(msg.future) ++
+    Source.fromFuture(msg2.future)
+
+  val in = msgs
     .via(jsonrpc.Codec.encoder)
     .via(Flow.fromFunction(jsonrpc.Codec.jsonPrinter.pretty))
     .via(Framing.byteStringFramer)
-    .via(Flow.fromFunction[ByteString,ByteString] { bs =>
-      println(bs.decodeString(StandardCharsets.UTF_8))
-      bs
-    })
 
   import Codec._
 
   val client = Promise[LanguageClient]
-  val local = Local[LanguageServer](new ExampleServer(client.future))
+  val server = new ExampleServer(client.future)
+  val local = Local[LanguageServer](server)
   val remote = Remote[LanguageClient](Id.standard)
-  val out = Sink.foreach[ByteString](x => println(x.decodeString(StandardCharsets.UTF_8)))
 
-  val con = Connection.create(local,remote)
+  val out = Sink.foreach[Message](println)
 
-  client.success(Connection.open(in,out,con))
+  val handler = GraphDSL.create(local, remote) (Keep.right) { implicit b =>
+    (local, remote) =>
+      import GraphDSL.Implicits._
+
+      val partition = b.add(TypePartition[Message,RequestMessage,Response])
+      val merge     = b.add(Merge[Message](2))
+      partition.out1 ~> local  ~> merge
+      partition.out2 ~> remote ~> merge
+      FlowShape(partition.in, merge.out)
+  }
+
+  val interface = msgs.viaMat(handler)(Keep.right).to(out).run()
+
+  client.success(interface)
+
+  msg.success(Request(
+    Id.Long(0),
+    "initialize",
+    NamedParameters(Map(
+      "processId" -> Json.Null,
+      "rootPath" -> Json.Null,
+      "initializationOptions" -> Json.Null,
+      "capabilities" -> Json.obj()
+    ))
+  ))
 
   readLine()
+
   system.terminate()
 }

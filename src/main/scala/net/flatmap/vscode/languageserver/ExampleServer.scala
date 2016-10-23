@@ -7,6 +7,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class ExampleServer(client: Future[LanguageClient])(implicit ec: ExecutionContext)
   extends LanguageServer {
+
   /**
     * The initialize request is sent as the first request from the client to
     * the server.
@@ -26,7 +27,6 @@ class ExampleServer(client: Future[LanguageClient])(implicit ec: ExecutionContex
                  initializationOptions: Option[Json],
                  capabilities: ClientCapabilities): Future[InitializeResult]
   = {
-    println("initialize")
     client.map { client =>
       client.window.showMessage(MessageType.Info,"Hello from Scala!")
       InitializeResult(ServerCapabilities())
@@ -48,7 +48,7 @@ class ExampleServer(client: Future[LanguageClient])(implicit ec: ExecutionContex
     * exit with success code 0 if the shutdown request has been received
     * before; otherwise with error code 1.
     */
-  def exit(): Unit = ???
+  def exit(): Unit = println("exit")
 
   @JsonRPCNamespace(prefix = "textDocument/")
   def textDocument: LanguageServer.TextDocumentOperations = ???

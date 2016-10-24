@@ -42,6 +42,8 @@ object Example extends App{
 
   val out = Sink.foreach[Message](println)
 
+  val connection = Connection.create(local,remote)
+
   val handler = GraphDSL.create(local, remote) (Keep.right) { implicit b =>
     (local, remote) =>
       import GraphDSL.Implicits._
@@ -61,9 +63,6 @@ object Example extends App{
     Id.Long(0),
     "initialize",
     NamedParameters(Map(
-      "processId" -> Json.Null,
-      "rootPath" -> Json.Null,
-      "initializationOptions" -> Json.Null,
       "capabilities" -> Json.obj()
     ))
   ))

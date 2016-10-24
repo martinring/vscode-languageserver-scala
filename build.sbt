@@ -7,4 +7,4 @@ bintrayOrganization := Some("flatmap")
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
 resolvers += Resolver.bintrayRepo("flatmap", "maven")
-libraryDependencies += "net.flatmap" %% "jsonrpc" % "0.3.1"
+libraryDependencies += "net.flatmap" %% "jsonrpc" % "0.3.2"

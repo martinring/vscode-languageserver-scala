@@ -45,7 +45,7 @@ object LanguageClient {
       * ask the client to log a telemetry event.
       * @param params payload
       */
-    def event(params: Json)
+    def event(params: Json): Unit
   }
 
   trait TextDocument {

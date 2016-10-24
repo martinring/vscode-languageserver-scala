@@ -1,17 +1,30 @@
 package net.flatmap.vscode.languageserver
 
+import java.net.URI
+
 import io.circe._
 import io.circe.generic.semiauto._
+
+import scala.util.Try
 
 /**
   * Created by martin on 22/10/2016.
   */
 object Codec {
+  implicit val encodeURI = Encoder.encodeString.contramap((uri: URI) => uri.toString)
+  implicit val decodeURI = Decoder.decodeString.map(URI.create)
+
+  implicit val uriKeyEncoder = KeyEncoder.instance[URI](_.toString)
+  implicit val uriKeyDecoder = KeyDecoder.instance[URI](s => Try(URI.create(s)).toOption)
+
   implicit val encodePosition = deriveEncoder[Position]
   implicit val decodePosition = deriveDecoder[Position]
 
-  implicit val encodeRange = deriveEncoder[Range]
-  implicit val decodeRange = deriveDecoder[Range]
+  implicit val encodeRange =
+    Encoder.forProduct2[Position,Position,Range]("start","end")(r => (r.start,r.end))
+
+  implicit val decodeRange =
+    Decoder.forProduct2[Position,Position,Range]("start","end")(Range.apply)
 
   implicit val encodeLocation = deriveEncoder[Location]
   implicit val decodeLocation = deriveDecoder[Location]

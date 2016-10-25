@@ -5,7 +5,7 @@ import net.flatmap.jsonrpc._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class ExampleServer(client: Future[LanguageClient])(implicit ec: ExecutionContext)
+class ExampleServer(client: LanguageClient with RemoteConnection)(implicit ec: ExecutionContext)
   extends LanguageServer {
 
   /**
@@ -25,12 +25,9 @@ class ExampleServer(client: Future[LanguageClient])(implicit ec: ExecutionContex
   def initialize(processId: Option[Int],
                  rootPath: Option[String],
                  initializationOptions: Option[Json],
-                 capabilities: ClientCapabilities): Future[InitializeResult]
-  = {
-    client.map { client =>
-      client.window.showMessage(MessageType.Info,"Hello from Scala!")
-      InitializeResult(ServerCapabilities())
-    }
+                 capabilities: ClientCapabilities): Future[InitializeResult] = Future.successful {
+    client.window.showMessage(MessageType.Info,"Hello from Scala!")
+    InitializeResult(ServerCapabilities())
   }
 
   /** The shutdown request is sent from the client to the server. It asks the
@@ -48,7 +45,9 @@ class ExampleServer(client: Future[LanguageClient])(implicit ec: ExecutionContex
     * exit with success code 0 if the shutdown request has been received
     * before; otherwise with error code 1.
     */
-  def exit(): Unit = println("exit")
+  def exit(): Unit = {
+    sys.exit(1)
+  }
 
   @JsonRPCNamespace(prefix = "textDocument/")
   def textDocument: LanguageServer.TextDocumentOperations = ???

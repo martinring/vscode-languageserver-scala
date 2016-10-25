@@ -21,53 +21,17 @@ object Example extends App{
   implicit val materializer = ActorMaterializer()
   implicit val dispatcher = system.dispatcher
 
-  val msg = Promise[Message]
-  val msg2 = Promise[Message]
-
-  val msgs =
-    Source.fromFuture(msg.future) ++
-    Source.fromFuture(msg2.future)
-
-  val in = msgs
-    .via(jsonrpc.Codec.encoder)
-    .via(Flow.fromFunction(jsonrpc.Codec.jsonPrinter.pretty))
-    .via(Framing.byteStringFramer)
-
   import Codec._
 
-  val client = Promise[LanguageClient]
-  val server = new ExampleServer(client.future)
-  val local = Local[LanguageServer](server)
+  val local = Local[LanguageServer]
   val remote = Remote[LanguageClient](Id.standard)
 
-  val out = Sink.foreach[Message](println)
+  val in = StreamConverters.fromInputStream(() => System.in)
+  val out = StreamConverters.fromOutputStream(() => System.out)
 
-  val connection = Connection.create(local,remote)
+  val connection = Connection.bidi[LanguageServer,LanguageClient with RemoteConnection](
+    local,remote,new ExampleServer(_))
 
-  val handler = GraphDSL.create(local, remote) (Keep.right) { implicit b =>
-    (local, remote) =>
-      import GraphDSL.Implicits._
-
-      val partition = b.add(TypePartition[Message,RequestMessage,Response])
-      val merge     = b.add(Merge[Message](2))
-      partition.out1 ~> local  ~> merge
-      partition.out2 ~> remote ~> merge
-      FlowShape(partition.in, merge.out)
-  }
-
-  val interface = msgs.viaMat(handler)(Keep.right).to(out).run()
-
-  client.success(interface)
-
-  msg.success(Request(
-    Id.Long(0),
-    "initialize",
-    NamedParameters(Map(
-      "capabilities" -> Json.obj()
-    ))
-  ))
-
-  readLine()
-
-  system.terminate()
+  val interface =
+    in.viaMat(connection)(Keep.right).to(out).run()
 }

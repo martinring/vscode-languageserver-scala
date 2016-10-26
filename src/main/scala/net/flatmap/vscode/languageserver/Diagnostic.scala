@@ -33,7 +33,7 @@ object DiagnosticSeverity {
   * @param message  The diagnostic's message.
   */
 case class Diagnostic(range: Range,
-                      severity: Option[DiagnosticSeverity],
-                      code: Option[DiagnosticCode],
-                      source: Option[String],
-                      message: String)
+                      message: String,
+                      severity: Option[DiagnosticSeverity] = None,
+                      code: Option[DiagnosticCode] = None,
+                      source: Option[String] = None)

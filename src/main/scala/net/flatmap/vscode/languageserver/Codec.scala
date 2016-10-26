@@ -39,7 +39,7 @@ object Codec {
   implicit val (
     encodeDiagnosticSeverity,
     decodeDiagnosticSeverity
-  ) = Enum(
+  ) = Enum[DiagnosticSeverity](
     DiagnosticSeverity.Error,
     DiagnosticSeverity.Warning,
     DiagnosticSeverity.Information,
@@ -78,7 +78,7 @@ object Codec {
   implicit val (
     encodeTextDocumentSyncKind,
     decodeTextDocumentSyncKind
-  ) = Enum(
+  ) = Enum[TextDocumentSyncKind](
     TextDocumentSyncKind.None,
     TextDocumentSyncKind.Full,
     TextDocumentSyncKind.Incremental
@@ -108,7 +108,7 @@ object Codec {
   implicit val (
     encodeMessageType,
     decodeMessageType
-    ) = Enum(
+    ) = Enum[MessageType](
     MessageType.Error,
     MessageType.Warning,
     MessageType.Info,
@@ -121,7 +121,7 @@ object Codec {
   implicit val (
     encodeFileChangeType,
     decodeFileChangeType
-    ) = Enum(
+    ) = Enum[FileChangeType](
     FileChangeType.Created,
     FileChangeType.Changed,
     FileChangeType.Deleted
@@ -133,7 +133,7 @@ object Codec {
   implicit val (
     encodeCompletionItemKind,
     decodeCompletionItemKind
-  ) = Enum(
+  ) = Enum[CompletionItemKind](
     CompletionItemKind.Text,
     CompletionItemKind.Method,
     CompletionItemKind.Function,
@@ -190,7 +190,7 @@ object Codec {
   implicit val (
     encodeDocumentHighlightKind,
     decodeDocumentHighlightKind
-  ) = Enum(
+  ) = Enum[DocumentHighlightKind](
     DocumentHighlightKind.Text,
     DocumentHighlightKind.Read,
     DocumentHighlightKind.Write
@@ -202,7 +202,7 @@ object Codec {
   implicit val (
     encodeSymbolKind,
     decodeSymbolKind
-  ) = Enum(
+  ) = Enum[SymbolKind](
     SymbolKind.File,
     SymbolKind.Module,
     SymbolKind.Namespace,

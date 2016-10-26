@@ -8,11 +8,11 @@ import java.net.URI
 sealed trait FileChangeType
 object FileChangeType {
   /** The file got created */
-  object Created extends FileChangeType
+  case object Created extends FileChangeType
   /** The file got changed */
-  object Changed extends FileChangeType
+  case object Changed extends FileChangeType
   /** The file got deleted */
-  object Deleted extends FileChangeType
+  case object Deleted extends FileChangeType
 }
 
 /**

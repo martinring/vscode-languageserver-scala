@@ -1,5 +1,10 @@
 package net.flatmap.vscode.languageserver
 
+import java.net.URI
+
+import akka.NotUsed
+import akka.stream.actor.ActorPublisher
+import akka.stream.scaladsl.Source
 import io.circe.Json
 import net.flatmap.jsonrpc.{JsonRPCMethod, JsonRPCNamespace}
 

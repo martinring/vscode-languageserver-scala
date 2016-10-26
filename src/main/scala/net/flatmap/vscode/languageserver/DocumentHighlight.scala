@@ -6,13 +6,13 @@ package net.flatmap.vscode.languageserver
 sealed trait DocumentHighlightKind
 object DocumentHighlightKind {
   /** A textual occurrance. */
-  object Text extends DocumentHighlightKind
+  case object Text extends DocumentHighlightKind
 
   /** Read-access of a symbol, like reading a variable. */
-  object Read extends DocumentHighlightKind
+  case object Read extends DocumentHighlightKind
 
   /** Write-access of a symbol, like writing to a variable. */
-  object Write extends DocumentHighlightKind
+  case object Write extends DocumentHighlightKind
 }
 
 /**

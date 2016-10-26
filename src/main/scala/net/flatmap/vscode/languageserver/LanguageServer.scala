@@ -1,265 +1,14 @@
 package net.flatmap.vscode.languageserver
 
 import io.circe.Json
-import net.flatmap.jsonrpc.JsonRPCNamespace
+import net.flatmap.jsonrpc.{JsonRPCMethod, JsonRPCNamespace}
 
 import scala.concurrent.Future
 
-object LanguageServer {
-  trait TextDocumentOperations {
-    /**
-      * The document open notification is sent from the client to the server
-      * to signal newly opened text documents. The document's truth is now
-      * managed by the client and the server must not try to read the
-      * document's truth using the document's uri.
-      *
-      * @param textDocument The document that was opened.
-      */
-    def didOpen(textDocument: TextDocumentItem)
-
-    /**
-      * The document change notification is sent from the client to the
-      * server to signal changes to a text document. In 2.0 the shape of the
-      * params has changed to include proper version numbers and language ids.
-      *
-      * @param textDocument   The document that did change. The version
-      *                       number points to the version after all provided
-      *                       content changes have been applied.
-      * @param contentChanges The actual content changes.
-      */
-    def didChange(textDocument: VersionedTextDocumentIdentifier,
-                  contentChanges: Seq[TextDocumentContentChangeEvent])
-
-    /**
-      * The document close notification is sent from the client to the server
-      * when the document got closed in the client. The document's truth now
-      * exists where the document's uri points to (e.g. if the document's uri
-      * is a file uri the truth now exists on disk).
-      *
-      * @param textDocument The document that was closed.
-      */
-    def didClose(textDocument: TextDocumentIdentifier)
-
-    /**
-      * The document save notification is sent from the client to the server
-      * when the document was saved in the client.
-      *
-      * @param textDocument The document that was saved.
-      */
-    def didSave(textDocument: TextDocumentIdentifier)
-
-    /**
-      * The watched files notification is sent from the client to the server
-      * when the client detects changes to files watched by the language client.
-      * @param changes The actual file events.
-      */
-    def didChangeWatchedFiles(changes: Seq[FileEvent])
-
-    /**
-      * The Completion request is sent from the client to the server to
-      * compute completion items at a given cursor position. Completion items
-      * are presented in the IntelliSense user interface. If computing full
-      * completion items is expensive, servers can additionally provide a
-      * handler for the completion item resolve request
-      * ('completionItem/resolve'). This request is sent when a completion
-      * item is selected in the user interface. A typically use case is for
-      * example: the 'textDocument/completion' request doesn't fill in the
-      * documentation property for returned completion items since it is
-      * expensive to compute. When the item is selected in the user interface
-      * then a 'completionItem/resolve' request is sent with the selected
-      * completion item as a param. The returned completion item should have
-      * the documentation property filled in.
-      *
-      * @param textDocument The text document.
-      * @param position     The position inside the text document.
-      */
-    def completion(textDocument: TextDocumentIdentifier,
-                   position: Position): Future[CompletionList]
-
-    /**
-      * The hover request is sent from the client to the server to request
-      * hover information at a given text document position.
-      *
-      * @param textDocument The text document.
-      * @param position     The position inside the text document.
-      */
-    def hover(textDocument: TextDocumentIdentifier,
-              position: Position): Future[Hover]
-
-    /**
-      * The signature help request is sent from the client to the server to
-      * request signature information at a given cursor position.
-      *
-      * @param textDocument The text document.
-      * @param position     The position inside the text document.
-      */
-    def signatureHelp(textDocument: TextDocumentIdentifier,
-                      position: Position): Future[SignatureHelp]
-
-    /**
-      * The goto definition request is sent from the client to the server to
-      * resolve the definition location of a symbol at a given text document
-      * position.
-      *
-      * @param textDocument The text document.
-      * @param position     The position inside the text document.
-      */
-    def definition(textDocument: TextDocumentIdentifier,
-                   position: Position): Future[Seq[Location]]
-
-    /**
-      * The goto definition request is sent from the client to the server to
-      * resolve the definition location of a symbol at a given text document
-      * position.
-      *
-      * @param textDocument The text document.
-      * @param position     The position inside the text document.
-      * @param includeDeclaration Include the declaration of the current symbol.
-      */
-    def references(textDocument: TextDocumentIdentifier,
-                   position: Position,
-                   includeDeclaration: Boolean): Future[Seq[Location]]
-
-    /**
-      * The document highlight request is sent from the client to the server
-      * to resolve a document highlights for a given text document position.
-      * For programming languages this usually highlights all references to
-      * the symbol scoped to this file. However we kept
-      * 'textDocument/documentHighlight' and 'textDocument/references'
-      * separate requests since the first one is allowed to be more fuzzy.
-      * Symbol matches usually have a DocumentHighlightKind of Read or Write
-      * whereas fuzzy or textual matches use Textas the kind.
-      *
-      * @param textDocument The text document.
-      * @param position     The position inside the text document.
-      */
-    def documentHighlight(textDocument: TextDocumentIdentifier,
-                          position: Position): Future[Seq[DocumentHighlight]]
-
-    /**
-      * The document symbol request is sent from the client to the server to
-      * list all symbols found in a given text document.
-      *
-      * @param textDocument The text document.
-      */
-    def documentSymbol(textDocument: TextDocumentIdentifier):
-      Future[Seq[SymbolInformation]]
-
-    /**
-      * The code action request is sent from the client to the server to
-      * compute commands for a given text document and range. The request is
-      * triggered when the user moves the cursor into a problem marker in the
-      * editor or presses the lightbulb associated with a marker.
-      *
-      * @param textDocument The document in which the command was invoked.
-      * @param range        The range for which the command was invoked.
-      * @param context      Context carrying additional information.
-      */
-    def codeAction(textDocument: TextDocumentIdentifier,
-                   range: Range,
-                   context: CodeActionContext): Future[Seq[Command]]
-
-    /**
-      * The code lens request is sent from the client to the server to
-      * compute code lenses for a given text document.
-      *
-      * @param textDocument The document to request code lens for.
-      */
-    def codeLens(textDocument: TextDocumentIdentifier): Future[Seq[CodeLens]]
-
-    /**
-      * The document formatting request is sent from the server to the client
-      * to format a whole document.
-      *
-      * @param textDocument The document to format.
-      * @param options      The format options.
-      */
-    def formatting(textDocument: TextDocumentIdentifier,
-                   options: FormattingOptions): Future[Seq[TextEdit]]
-
-    /**
-      * The document range formatting request is sent from the client to the
-      * server to format a given range in a document.
-      *
-      * @param textDocument The document to format.
-      * @param range        The range to format
-      * @param options      The format options
-      * @return
-      */
-    def rangeFormatting(textDocument: TextDocumentIdentifier,
-                        range: Range,
-                        options: FormattingOptions): Future[Seq[TextEdit]]
-
-    /**
-      * The document on type formatting request is sent from the client to
-      * the server to format parts of the document during typing.
-      *
-      * @param textDocument The document to format.
-      * @param position     The position at which this request was sent.
-      * @param ch           The character that has been typed.
-      * @param options      The format options.
-      */
-    def onTypeFormatting(textDocument: TextDocumentIdentifier,
-                         position: Position,
-                         ch: String,
-                         options: FormattingOptions): Future[Seq[TextEdit]]
-
-    /**
-      * The rename request is sent from the client to the server to perform a
-      * workspace-wide rename of a symbol.
-      *
-      * @param textDocument The document to format.
-      * @param position     The position at which this request was sent.
-      * @param newName      The new name of the symbol. If the given name is
-      *                     not valid the request must return a
-      *                     [ResponseError](#ResponseError) with an
-      *                     appropriate message set.
-      */
-    def rename(textDocument: TextDocumentIdentifier,
-               position: Position,
-               newName: String)
-  }
-
-  trait CompletionItemOperations {
-    /**
-      * The request is sent from the client to the server to resolve
-      * additional information for a given completion item.
-      */
-    def resolve(label: String,
-                kind: Option[CompletionItemKind],
-                detail: Option[String],
-                documentation: Option[String],
-                sortText: Option[String],
-                filterText: Option[String],
-                insertText: Option[String],
-                textEdit: Option[TextEdit],
-                additionalTextEdits: Option[Seq[TextEdit]],
-                command: Option[Command],
-                data: Option[Json]): Future[CompletionItem]
-  }
-
-  trait CodeLensOperations {
-    /**
-      * The code lens resolve request is sent from the client to the server
-      * to resolve the command for a given code lens item.
-      */
-    def resolve(range: Range,
-                command: Option[Command],
-                data: Option[Json]): Future[CodeLens]
-  }
-
-  trait WorkspaceOperations {
-    /**
-      * The workspace symbol request is sent from the client to the server to
-      * list project-wide symbols matching the query string.
-      *
-      * @param query A non-empty query string
-      */
-    def symbol(query: String): Future[Seq[SymbolInformation]]
-  }
-}
-
 trait LanguageServer {
+  def textDocumentSyncKind: TextDocumentSyncKind = TextDocumentSyncKind.None
+  def capabilities: ServerCapabilities= ServerCapabilities(Some(textDocumentSyncKind))
+
   /**
     * The initialize request is sent as the first request from the client to
     * the server.
@@ -295,118 +44,334 @@ trait LanguageServer {
     */
   def exit()
 
-  @JsonRPCNamespace(prefix = "textDocument/")
-  def textDocument: LanguageServer.TextDocumentOperations
+  /**
+    * The document open notification is sent from the client to the server
+    * to signal newly opened text documents. The document's truth is now
+    * managed by the client and the server must not try to read the
+    * document's truth using the document's uri.
+    *
+    * @param textDocument The document that was opened.
+    */
+  @JsonRPCMethod("textDocument/didOpen")
+  def didOpen(textDocument: TextDocumentItem)
 
-  @JsonRPCNamespace(prefix = "completionItem/")
-  def completionItem: LanguageServer.CompletionItemOperations
+  /**
+    * The document change notification is sent from the client to the
+    * server to signal changes to a text document. In 2.0 the shape of the
+    * params has changed to include proper version numbers and language ids.
+    *
+    * @param textDocument   The document that did change. The version
+    *                       number points to the version after all provided
+    *                       content changes have been applied.
+    * @param contentChanges The actual content changes.
+    */
+  @JsonRPCMethod("textDocument/didChange")
+  def didChange(textDocument: VersionedTextDocumentIdentifier,
+                contentChanges: Seq[TextDocumentContentChangeEvent])
 
-  @JsonRPCNamespace(prefix = "workspace/")
-  def workspace: LanguageServer.WorkspaceOperations
+  /**
+    * The document close notification is sent from the client to the server
+    * when the document got closed in the client. The document's truth now
+    * exists where the document's uri points to (e.g. if the document's uri
+    * is a file uri the truth now exists on disk).
+    *
+    * @param textDocument The document that was closed.
+    */
+  @JsonRPCMethod("textDocument/didClose")
+  def didClose(textDocument: TextDocumentIdentifier)
 
-  @JsonRPCNamespace(prefix = "codeLens/")
-  def codeLens: LanguageServer.CodeLensOperations
+  /**
+    * The document save notification is sent from the client to the server
+    * when the document was saved in the client.
+    *
+    * @param textDocument The document that was saved.
+    */
+  @JsonRPCMethod("textDocument/didSave")
+  def didSave(textDocument: TextDocumentIdentifier)
+
+  /**
+    * The watched files notification is sent from the client to the server
+    * when the client detects changes to files watched by the language client.
+    * @param changes The actual file events.
+    */
+  @JsonRPCMethod("textDocument/didChangeWatchedFiles")
+  def didChangeWatchedFiles(changes: Seq[FileEvent])
 }
 
-/*
-import akka.stream.Materializer
-import io.circe._
-import io.circe.generic.auto._
-import net.flatmap.jsonrpc._
-import io.circe.syntax._
-import net.flatmap.jsonrpc.{Connection, ErrorCodes, ResponseError, ResponseMessage}
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
-
-trait LanguageServiceProvider {
-  def initialize(processId: Int, rootPath: String, initializationOptions: Option[Json], capabilities: ClientCapabilities): Future[LanguageService]
+trait HoverProvider extends LanguageServer {
+   override def capabilities = super.capabilities.copy(hoverProvider = Some(true))
+  /**
+    * The hover request is sent from the client to the server to request
+    * hover information at a given text document position.
+    *
+    * @param textDocument The text document.
+    * @param position     The position inside the text document.
+    */
+  @JsonRPCMethod("textDocument/hover")
+  def hover(textDocument: TextDocumentIdentifier,
+            position: Position): Future[Hover]
 }
 
-trait LanguageService {
-  private [languageserver] def capabilities: ServerCapabilities= ServerCapabilities(Some(textDocumentSyncKind))
-  def shutdown(): Future[Unit]
-  def exit(): Unit
-  def textDocumentSyncKind: TextDocumentSyncKind
-  def didChangeConfiguration(settings: Json): Unit
-  def didChangeWatchedFiles(changes: Array[FileEvent]): Unit
-  def didOpen(textDocument: TextDocumentItem): Unit
-  def didChange(textDocument: VersionedTextDocumentIdentifier, contentChanges: Array[TextDocumentContentChangeEvent]): Unit
-  def didClose(textDocument: TextDocumentIdentifier): Unit
-  def didSave(textDocument: TextDocumentIdentifier): Unit
-}
-
-trait HoverProvider extends LanguageService {
-  override private [languageserver] def capabilities = super.capabilities.copy(hoverProvider = true)
-  def hover(textDocument: TextDocumentIdentifier, position: Position): Future[Hover]
-}
-
-trait CompletionProvider extends LanguageService {
+trait CompletionProvider extends LanguageServer {
   def completionOptions: CompletionOptions
-  override private [languageserver] def capabilities = super.capabilities.copy(completionProvider = Some(completionOptions))
-  def completion(textDocument: TextDocumentIdentifier, position: Position): Future[CompletionList]
-  def resolveCompletionItem(item: net.flatmap.vscode.languageserver.CompletionItem): Future[net.flatmap.vscode.languageserver.CompletionItem]
+   override def capabilities = super.capabilities.copy(completionProvider = Some(completionOptions))
+
+  /**
+    * The Completion request is sent from the client to the server to
+    * compute completion items at a given cursor position. Completion items
+    * are presented in the IntelliSense user interface. If computing full
+    * completion items is expensive, servers can additionally provide a
+    * handler for the completion item resolve request
+    * ('completionItem/resolve'). This request is sent when a completion
+    * item is selected in the user interface. A typically use case is for
+    * example: the 'textDocument/completion' request doesn't fill in the
+    * documentation property for returned completion items since it is
+    * expensive to compute. When the item is selected in the user interface
+    * then a 'completionItem/resolve' request is sent with the selected
+    * completion item as a param. The returned completion item should have
+    * the documentation property filled in.
+    *
+    * @param textDocument The text document.
+    * @param position     The position inside the text document.
+    */
+  @JsonRPCMethod("textDocument/completion")
+  def completion(textDocument: TextDocumentIdentifier,
+                 position: Position): Future[CompletionList]
+
+  /**
+    * The request is sent from the client to the server to resolve
+    * additional information for a given completion item.
+    */
+  @JsonRPCMethod("completionItem/resolve")
+  def resolveCompletionItem(label: String,
+                            kind: Option[CompletionItemKind],
+                            detail: Option[String],
+                            documentation: Option[String],
+                            sortText: Option[String],
+                            filterText: Option[String],
+                            insertText: Option[String],
+                            textEdit: Option[TextEdit],
+                            additionalTextEdits: Option[Seq[TextEdit]],
+                            command: Option[Command],
+                            data: Option[Json]): Future[CompletionItem]
 }
 
-trait SignatureHelpProvider extends LanguageService {
+trait SignatureHelpProvider extends LanguageServer {
   def signatureHelpOptions: SignatureHelpOptions
-  override private[languageserver] def capabilities: ServerCapabilities = super.capabilities.copy(signatureHelpProvider = Some(signatureHelpOptions))
-  def signatureHelp(textDocument: TextDocumentIdentifier, position: Position): Future[SignatureHelp]
+  override def capabilities: ServerCapabilities = super.capabilities.copy(signatureHelpProvider = Some(signatureHelpOptions))
+
+  /**
+    * The signature help request is sent from the client to the server to
+    * request signature information at a given cursor position.
+    *
+    * @param textDocument The text document.
+    * @param position     The position inside the text document.
+    */
+  @JsonRPCMethod("textDocument/signatureHelp")
+  def signatureHelp(textDocument: TextDocumentIdentifier,
+                    position: Position): Future[SignatureHelp]
+
 }
 
-trait DefinitionProvider extends LanguageService {
-  override private [languageserver] def capabilities = super.capabilities.copy(definitionProvider = true)
-  def definition(textDocument: TextDocumentIdentifier, position: Position): Future[Array[Location]]
+trait DefinitionProvider extends LanguageServer {
+   override def capabilities = super.capabilities.copy(definitionProvider = Some(true))
+  /**
+    * The goto definition request is sent from the client to the server to
+    * resolve the definition location of a symbol at a given text document
+    * position.
+    *
+    * @param textDocument The text document.
+    * @param position     The position inside the text document.
+    */
+  @JsonRPCMethod("textDocument/definition")
+  def definition(textDocument: TextDocumentIdentifier,
+                 position: Position): Future[Seq[Location]]
 }
 
-trait ReferenceProvider extends LanguageService {
-  override private [languageserver] def capabilities = super.capabilities.copy(renameProvider = true)
-  def references(textDocument: TextDocumentIdentifier, position: Position, context: ReferenceContext): Future[Array[Location]]
+trait ReferenceProvider extends LanguageServer {
+   override def capabilities = super.capabilities.copy(renameProvider = Some(true))
+  /**
+    * The goto definition request is sent from the client to the server to
+    * resolve the definition location of a symbol at a given text document
+    * position.
+    *
+    * @param textDocument The text document.
+    * @param position     The position inside the text document.
+    * @param includeDeclaration Include the declaration of the current symbol.
+    */
+  @JsonRPCMethod("textDocument/references")
+  def references(textDocument: TextDocumentIdentifier,
+                 position: Position,
+                 includeDeclaration: Boolean): Future[Seq[Location]]
+
 }
 
-trait DocumentHighlightProvider extends LanguageService {
-  override private [languageserver] def capabilities = super.capabilities.copy(documentHighlightProvider = true)
-  def documentHighlight(textDocument: TextDocumentIdentifier, position: Position): Future[Array[DocumentHighlight]]
+trait DocumentHighlightProvider extends LanguageServer {
+   override def capabilities = super.capabilities.copy(documentHighlightProvider = Some(true))
+
+  /**
+    * The document highlight request is sent from the client to the server
+    * to resolve a document highlights for a given text document position.
+    * For programming languages this usually highlights all references to
+    * the symbol scoped to this file. However we kept
+    * 'textDocument/documentHighlight' and 'textDocument/references'
+    * separate requests since the first one is allowed to be more fuzzy.
+    * Symbol matches usually have a DocumentHighlightKind of Read or Write
+    * whereas fuzzy or textual matches use Textas the kind.
+    *
+    * @param textDocument The text document.
+    * @param position     The position inside the text document.
+    */
+  @JsonRPCMethod("textDocument/documentHighlight")
+  def documentHighlight(textDocument: TextDocumentIdentifier,
+                        position: Position): Future[Seq[DocumentHighlight]]
+
 }
 
-trait DocumentSymbolProvider extends LanguageService {
-  override private [languageserver] def capabilities = super.capabilities.copy(documentSymbolProvider = true)
-  def documentSymbol(textDocument: TextDocumentIdentifier): Future[Array[SymbolInformation]]
+trait DocumentSymbolProvider extends LanguageServer {
+   override def capabilities = super.capabilities.copy(documentSymbolProvider = Some(true))
+
+  /**
+    * The document symbol request is sent from the client to the server to
+    * list all symbols found in a given text document.
+    *
+    * @param textDocument The text document.
+    */
+  @JsonRPCMethod("textDocument/documentSymbol")
+  def documentSymbol(textDocument: TextDocumentIdentifier):
+  Future[Seq[SymbolInformation]]
 }
 
-trait WorkspaceSymbolProvider extends LanguageService {
-  override private [languageserver] def capabilities = super.capabilities.copy(workspaceSymbolProvider = true)
-  def symbol(query: String): Future[Array[SymbolInformation]]
+trait WorkspaceSymbolProvider extends LanguageServer {
+   override def capabilities = super.capabilities.copy(workspaceSymbolProvider = Some(true))
+
+  /**
+    * The workspace symbol request is sent from the client to the server to
+    * list project-wide symbols matching the query string.
+    *
+    * @param query A non-empty query string
+    */
+  @JsonRPCMethod("workspace/symbol")
+  def workspaceSymbol(query: String): Future[Seq[SymbolInformation]]
 }
 
-trait CodeActionProvider extends LanguageService {
-  override private [languageserver] def capabilities = super.capabilities.copy(codeActionProvider = true)
-  def codeAction(textDocument: TextDocumentIdentifier, range: Range, context: CodeActionContext): Future[Array[Command]]
+trait CodeActionProvider extends LanguageServer {
+   override def capabilities = super.capabilities.copy(codeActionProvider = Some(true))
+
+
+  /**
+    * The code action request is sent from the client to the server to
+    * compute commands for a given text document and range. The request is
+    * triggered when the user moves the cursor into a problem marker in the
+    * editor or presses the lightbulb associated with a marker.
+    *
+    * @param textDocument The document in which the command was invoked.
+    * @param range        The range for which the command was invoked.
+    * @param context      Context carrying additional information.
+    */
+  @JsonRPCMethod("textDocument/codeAction")
+  def codeAction(textDocument: TextDocumentIdentifier,
+                 range: Range,
+                 context: CodeActionContext): Future[Seq[Command]]
 }
 
-trait CodeLensProvider extends LanguageService {
+trait CodeLensProvider extends LanguageServer {
   def codeLensOptions: CodeLensOptions
-  override private[languageserver] def capabilities: ServerCapabilities = super.capabilities.copy(codeLensProvider = Some(codeLensOptions))
-  def codeLens(textDocument: TextDocumentIdentifier): Future[Array[net.flatmap.vscode.languageserver.CodeLens]]
-  def resolveCodeLens(codeLens: net.flatmap.vscode.languageserver.CodeLens): Future[net.flatmap.vscode.languageserver.CodeLens]
+  override def capabilities: ServerCapabilities = super.capabilities.copy(codeLensProvider = Some(codeLensOptions))
+
+  /**
+    * The code lens request is sent from the client to the server to
+    * compute code lenses for a given text document.
+    *
+    * @param textDocument The document to request code lens for.
+    */
+  @JsonRPCMethod("textDocument/codeLens")
+  def codeLens(textDocument: TextDocumentIdentifier): Future[Seq[CodeLens]]
+
+  /**
+    * The code lens resolve request is sent from the client to the server
+    * to resolve the command for a given code lens item.
+    */
+  @JsonRPCMethod("codeLens/resolve")
+  def resolveCodeLens(range: Range,
+                      command: Option[Command],
+                      data: Option[Json]): Future[CodeLens]
 }
 
-trait DocumentFormattingProvider extends LanguageService {
-  override private [languageserver] def capabilities = super.capabilities.copy(documentFormattingProvider = true)
-  def formatting(textDocument: TextDocumentIdentifier, options: FormattingOptions): Future[Array[TextEdit]]
+trait DocumentFormattingProvider extends LanguageServer {
+   override def capabilities = super.capabilities.copy(documentFormattingProvider = Some(true))
+
+
+  /**
+    * The document formatting request is sent from the server to the client
+    * to format a whole document.
+    *
+    * @param textDocument The document to format.
+    * @param options      The format options.
+    */
+  @JsonRPCMethod("textDocument/formatting")
+  def formatting(textDocument: TextDocumentIdentifier,
+                 options: FormattingOptions): Future[Seq[TextEdit]]
 }
 
-trait DocumentRangeFormattingProvider extends LanguageService {
-  override private [languageserver] def capabilities = super.capabilities.copy(documentRangeFormattingProvider = true)
-  def rangeFormatting(textDocument: TextDocumentIdentifier, range: Range, options: FormattingOptions): Future[Array[TextEdit]]
+trait DocumentRangeFormattingProvider extends LanguageServer {
+   override def capabilities = super.capabilities.copy(documentRangeFormattingProvider = Some(true))
+
+
+  /**
+    * The document range formatting request is sent from the client to the
+    * server to format a given range in a document.
+    *
+    * @param textDocument The document to format.
+    * @param range        The range to format
+    * @param options      The format options
+    * @return
+    */
+  @JsonRPCMethod("textDocument/rangeFormatting")
+  def rangeFormatting(textDocument: TextDocumentIdentifier,
+                      range: Range,
+                      options: FormattingOptions): Future[Seq[TextEdit]]
 }
 
-trait DocumentOnTypeFormattingProvider extends LanguageService {
+trait DocumentOnTypeFormattingProvider extends LanguageServer {
   def documentOnTypeFormattingOptions: DocumentOnTypeFormattingOptions
-  override private[languageserver] def capabilities: ServerCapabilities = super.capabilities.copy(documentOnTypeFormattingProvider = Some(documentOnTypeFormattingOptions))
-  def onTypeFormatting(textDocument: TextDocumentIdentifier, position: Position, ch: String, options: FormattingOptions): Future[Array[TextEdit]]
+  override def capabilities: ServerCapabilities = super.capabilities.copy(documentOnTypeFormattingProvider = Some(documentOnTypeFormattingOptions))
+
+  /**
+    * The document on type formatting request is sent from the client to
+    * the server to format parts of the document during typing.
+    *
+    * @param textDocument The document to format.
+    * @param position     The position at which this request was sent.
+    * @param ch           The character that has been typed.
+    * @param options      The format options.
+    */
+  @JsonRPCMethod("textDocument/onTypeFormatting")
+  def onTypeFormatting(textDocument: TextDocumentIdentifier,
+                       position: Position,
+                       ch: String,
+                       options: FormattingOptions): Future[Seq[TextEdit]]
+
 }
 
-trait RenameProvider extends LanguageService {
-  override private [languageserver] def capabilities = super.capabilities.copy(renameProvider = true)
-  def rename(textDocument: TextDocumentIdentifier, position: Position, newName: String): Future[WorkspaceEdit]
-}*/
+trait RenameProvider extends LanguageServer {
+   override def capabilities = super.capabilities.copy(renameProvider = Some(true))
+
+  /**
+    * The rename request is sent from the client to the server to perform a
+    * workspace-wide rename of a symbol.
+    *
+    * @param textDocument The document to format.
+    * @param position     The position at which this request was sent.
+    * @param newName      The new name of the symbol. If the given name is
+    *                     not valid the request must return a
+    *                     [ResponseError](#ResponseError) with an
+    *                     appropriate message set.
+    */
+  @JsonRPCMethod("textDocument/rename")
+  def rename(textDocument: TextDocumentIdentifier,
+             position: Position,
+             newName: String)
+
+}

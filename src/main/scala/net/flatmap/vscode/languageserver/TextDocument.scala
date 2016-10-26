@@ -12,6 +12,31 @@ import java.net.URI
 case class TextDocumentIdentifier(uri: URI)
 
 /**
+  * Represents a line of text, such as a line of source code.
+  *
+  * TextLine objects are __immutable__. When a [document](#TextDocument) changes,
+  * previously retrieved lines will not represent the latest state.
+  *
+  * @param lineNumber The zero-based line number.
+  * @param text       The text of this line without the line separator characters.
+  * @param range      The range this line covers without the line separator characters.
+  */
+case class TextLine(lineNumber: Int,
+                    text: String,
+                    range: Range) {
+  /**
+    * The offset of the first character which is not a whitespace character as defined
+    * by `/\s/`. **Note** that if a line is all whitespaces the length of the line is returned.
+    */
+  def firstNonWhitespaceCharacterIndex: Int = text.indexWhere(!_.isWhitespace)
+
+  /**
+    * Whether this line is whitespace only
+    */
+  def isEmptyOrWhitespace: Boolean = text.forall(_.isWhitespace)
+}
+
+/**
   * An item to transfer a text document from the client to the server.
   *
   * @param uri        The text document's URI.
@@ -23,7 +48,18 @@ case class TextDocumentIdentifier(uri: URI)
 case class TextDocumentItem(uri: URI,
                             languageId: String,
                             version: Int,
-                            text: String)
+                            text: String) {
+  def lines: Iterable[TextLine] =
+    Util.unfold[TextLine,(String,Int)]((text,0)) {
+      case ("",n) => None
+      case (text,n) =>
+        Util.lineBreak.findFirstMatchIn(text).fold {
+          Some(TextLine(n,text,Range(n,0,n,text.length)), ("", n+1))
+        } { case m =>
+          Some(TextLine(n,text.take(m.start),Range(n,0,n,m.start)), (text.drop(m.end), n+1))
+        }
+    }
+}
 
 /**
   * An identifier to denote a specific version of a text document.

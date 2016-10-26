@@ -8,7 +8,7 @@ import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{Cancel, Request}
 import akka.stream.scaladsl.Source
 
-private class TextDocumentActor extends ActorPublisher[TextDocumentItem] {
+/*private class TextDocumentActor extends ActorPublisher[TextDocumentItem] {
   def receive: Receive = {
     case item: TextDocumentItem =>
       context.become(initialized(item, totalDemand > 0))
@@ -43,4 +43,4 @@ trait TextDocuments extends LanguageServer {
   override def textDocumentSyncKind: TextDocumentSyncKind = TextDocumentSyncKind.None
   def actorFactory: ActorRefFactory
   def textDocuments: Source[Source[TextDocumentItem,NotUsed],NotUsed] =
-}
+}*/

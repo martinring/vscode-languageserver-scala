@@ -1,10 +1,8 @@
 package net.flatmap.vscode.languageserver
 
 import java.net.URI
-
 import io.circe.Json
-import net.flatmap.jsonrpc._
-
+import net.flatmap.jsonrpc.JsonRPC
 import scala.concurrent.Future
 
 object LanguageClient {
@@ -63,12 +61,12 @@ object LanguageClient {
 }
 
 trait LanguageClient {
-  @JsonRPCNamespace("window/")
+  @JsonRPC.Namespace("window/")
   def window: LanguageClient.Window
 
-  @JsonRPCNamespace("telemetry/")
+  @JsonRPC.Namespace("telemetry/")
   def telemetry: LanguageClient.Telemetry
 
-  @JsonRPCNamespace("textDocument/")
+  @JsonRPC.Namespace("textDocument/")
   def textDocument: LanguageClient.TextDocument
 }

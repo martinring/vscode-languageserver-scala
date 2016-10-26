@@ -1,12 +1,7 @@
 package net.flatmap.vscode.languageserver
 
-import java.net.URI
-
-import akka.NotUsed
-import akka.stream.actor.ActorPublisher
-import akka.stream.scaladsl.Source
 import io.circe.Json
-import net.flatmap.jsonrpc.{JsonRPCMethod, JsonRPCNamespace}
+import net.flatmap.jsonrpc.JsonRPC
 
 import scala.concurrent.Future
 
@@ -57,7 +52,7 @@ trait LanguageServer {
     *
     * @param textDocument The document that was opened.
     */
-  @JsonRPCMethod("textDocument/didOpen")
+  @JsonRPC.Named("textDocument/didOpen")
   def didOpen(textDocument: TextDocumentItem)
 
   /**
@@ -70,7 +65,7 @@ trait LanguageServer {
     *                       content changes have been applied.
     * @param contentChanges The actual content changes.
     */
-  @JsonRPCMethod("textDocument/didChange")
+  @JsonRPC.Named("textDocument/didChange")
   def didChange(textDocument: VersionedTextDocumentIdentifier,
                 contentChanges: Seq[TextDocumentContentChangeEvent])
 
@@ -82,7 +77,7 @@ trait LanguageServer {
     *
     * @param textDocument The document that was closed.
     */
-  @JsonRPCMethod("textDocument/didClose")
+  @JsonRPC.Named("textDocument/didClose")
   def didClose(textDocument: TextDocumentIdentifier)
 
   /**
@@ -91,7 +86,7 @@ trait LanguageServer {
     *
     * @param textDocument The document that was saved.
     */
-  @JsonRPCMethod("textDocument/didSave")
+  @JsonRPC.Named("textDocument/didSave")
   def didSave(textDocument: TextDocumentIdentifier)
 
   /**
@@ -99,8 +94,16 @@ trait LanguageServer {
     * when the client detects changes to files watched by the language client.
     * @param changes The actual file events.
     */
-  @JsonRPCMethod("textDocument/didChangeWatchedFiles")
+  @JsonRPC.Named("textDocument/didChangeWatchedFiles")
   def didChangeWatchedFiles(changes: Seq[FileEvent])
+
+  /**
+    * A notification sent from the client to the server to signal the change
+    * of configuration settings.
+    * @param settings The actual changed settings
+    */
+  @JsonRPC.Named("workspace/didChangeConfiguration")
+  def didChangeConfiguration(settings: Map[String,Json])
 }
 
 
@@ -113,7 +116,7 @@ trait HoverProvider extends LanguageServer {
     * @param textDocument The text document.
     * @param position     The position inside the text document.
     */
-  @JsonRPCMethod("textDocument/hover")
+  @JsonRPC.Named("textDocument/hover")
   def hover(textDocument: TextDocumentIdentifier,
             position: Position): Future[Hover]
 }
@@ -140,7 +143,7 @@ trait CompletionProvider extends LanguageServer {
     * @param textDocument The text document.
     * @param position     The position inside the text document.
     */
-  @JsonRPCMethod("textDocument/completion")
+  @JsonRPC.Named("textDocument/completion")
   def completion(textDocument: TextDocumentIdentifier,
                  position: Position): Future[CompletionList]
 
@@ -148,18 +151,9 @@ trait CompletionProvider extends LanguageServer {
     * The request is sent from the client to the server to resolve
     * additional information for a given completion item.
     */
-  @JsonRPCMethod("completionItem/resolve")
-  def resolveCompletionItem(label: String,
-                            kind: Option[CompletionItemKind],
-                            detail: Option[String],
-                            documentation: Option[String],
-                            sortText: Option[String],
-                            filterText: Option[String],
-                            insertText: Option[String],
-                            textEdit: Option[TextEdit],
-                            additionalTextEdits: Option[Seq[TextEdit]],
-                            command: Option[Command],
-                            data: Option[Json]): Future[CompletionItem]
+  @JsonRPC.SpreadParam
+  @JsonRPC.Named("completionItem/resolve")
+  def resolveCompletionItem(item: CompletionItem): Future[CompletionItem]
 }
 
 trait SignatureHelpProvider extends LanguageServer {
@@ -173,7 +167,7 @@ trait SignatureHelpProvider extends LanguageServer {
     * @param textDocument The text document.
     * @param position     The position inside the text document.
     */
-  @JsonRPCMethod("textDocument/signatureHelp")
+  @JsonRPC.Named("textDocument/signatureHelp")
   def signatureHelp(textDocument: TextDocumentIdentifier,
                     position: Position): Future[SignatureHelp]
 
@@ -189,7 +183,7 @@ trait DefinitionProvider extends LanguageServer {
     * @param textDocument The text document.
     * @param position     The position inside the text document.
     */
-  @JsonRPCMethod("textDocument/definition")
+  @JsonRPC.Named("textDocument/definition")
   def definition(textDocument: TextDocumentIdentifier,
                  position: Position): Future[Seq[Location]]
 }
@@ -205,7 +199,7 @@ trait ReferenceProvider extends LanguageServer {
     * @param position     The position inside the text document.
     * @param includeDeclaration Include the declaration of the current symbol.
     */
-  @JsonRPCMethod("textDocument/references")
+  @JsonRPC.Named("textDocument/references")
   def references(textDocument: TextDocumentIdentifier,
                  position: Position,
                  includeDeclaration: Boolean): Future[Seq[Location]]
@@ -228,7 +222,7 @@ trait DocumentHighlightProvider extends LanguageServer {
     * @param textDocument The text document.
     * @param position     The position inside the text document.
     */
-  @JsonRPCMethod("textDocument/documentHighlight")
+  @JsonRPC.Named("textDocument/documentHighlight")
   def documentHighlight(textDocument: TextDocumentIdentifier,
                         position: Position): Future[Seq[DocumentHighlight]]
 
@@ -243,7 +237,7 @@ trait DocumentSymbolProvider extends LanguageServer {
     *
     * @param textDocument The text document.
     */
-  @JsonRPCMethod("textDocument/documentSymbol")
+  @JsonRPC.Named("textDocument/documentSymbol")
   def documentSymbol(textDocument: TextDocumentIdentifier):
   Future[Seq[SymbolInformation]]
 }
@@ -257,7 +251,7 @@ trait WorkspaceSymbolProvider extends LanguageServer {
     *
     * @param query A non-empty query string
     */
-  @JsonRPCMethod("workspace/symbol")
+  @JsonRPC.Named("workspace/symbol")
   def workspaceSymbol(query: String): Future[Seq[SymbolInformation]]
 }
 
@@ -275,7 +269,7 @@ trait CodeActionProvider extends LanguageServer {
     * @param range        The range for which the command was invoked.
     * @param context      Context carrying additional information.
     */
-  @JsonRPCMethod("textDocument/codeAction")
+  @JsonRPC.Named("textDocument/codeAction")
   def codeAction(textDocument: TextDocumentIdentifier,
                  range: Range,
                  context: CodeActionContext): Future[Seq[Command]]
@@ -291,14 +285,14 @@ trait CodeLensProvider extends LanguageServer {
     *
     * @param textDocument The document to request code lens for.
     */
-  @JsonRPCMethod("textDocument/codeLens")
+  @JsonRPC.Named("textDocument/codeLens")
   def codeLens(textDocument: TextDocumentIdentifier): Future[Seq[CodeLens]]
 
   /**
     * The code lens resolve request is sent from the client to the server
     * to resolve the command for a given code lens item.
     */
-  @JsonRPCMethod("codeLens/resolve")
+  @JsonRPC.Named("codeLens/resolve")
   def resolveCodeLens(range: Range,
                       command: Option[Command],
                       data: Option[Json]): Future[CodeLens]
@@ -315,7 +309,7 @@ trait DocumentFormattingProvider extends LanguageServer {
     * @param textDocument The document to format.
     * @param options      The format options.
     */
-  @JsonRPCMethod("textDocument/formatting")
+  @JsonRPC.Named("textDocument/formatting")
   def formatting(textDocument: TextDocumentIdentifier,
                  options: FormattingOptions): Future[Seq[TextEdit]]
 }
@@ -333,7 +327,7 @@ trait DocumentRangeFormattingProvider extends LanguageServer {
     * @param options      The format options
     * @return
     */
-  @JsonRPCMethod("textDocument/rangeFormatting")
+  @JsonRPC.Named("textDocument/rangeFormatting")
   def rangeFormatting(textDocument: TextDocumentIdentifier,
                       range: Range,
                       options: FormattingOptions): Future[Seq[TextEdit]]
@@ -352,7 +346,7 @@ trait DocumentOnTypeFormattingProvider extends LanguageServer {
     * @param ch           The character that has been typed.
     * @param options      The format options.
     */
-  @JsonRPCMethod("textDocument/onTypeFormatting")
+  @JsonRPC.Named("textDocument/onTypeFormatting")
   def onTypeFormatting(textDocument: TextDocumentIdentifier,
                        position: Position,
                        ch: String,
@@ -374,7 +368,7 @@ trait RenameProvider extends LanguageServer {
     *                     [ResponseError](#ResponseError) with an
     *                     appropriate message set.
     */
-  @JsonRPCMethod("textDocument/rename")
+  @JsonRPC.Named("textDocument/rename")
   def rename(textDocument: TextDocumentIdentifier,
              position: Position,
              newName: String)

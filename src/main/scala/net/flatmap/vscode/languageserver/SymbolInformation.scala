@@ -5,24 +5,24 @@ package net.flatmap.vscode.languageserver
   */
 sealed trait SymbolKind
 object SymbolKind {
-  object File extends SymbolKind
-  object Module extends SymbolKind
-  object Namespace extends SymbolKind
-  object Package extends SymbolKind
-  object Class extends SymbolKind
-  object Method extends SymbolKind
-  object Property extends SymbolKind
-  object Field extends SymbolKind
-  object Constructor extends SymbolKind
-  object Enum extends SymbolKind
-  object Interface extends SymbolKind
-  object Function extends SymbolKind
-  object Variable extends SymbolKind
-  object Constant extends SymbolKind
-  object String extends SymbolKind
-  object Number extends SymbolKind
-  object Boolean extends SymbolKind
-  object Array extends SymbolKind
+  case object File extends SymbolKind
+  case object Module extends SymbolKind
+  case object Namespace extends SymbolKind
+  case object Package extends SymbolKind
+  case object Class extends SymbolKind
+  case object Method extends SymbolKind
+  case object Property extends SymbolKind
+  case object Field extends SymbolKind
+  case object Constructor extends SymbolKind
+  case object Enum extends SymbolKind
+  case object Interface extends SymbolKind
+  case object Function extends SymbolKind
+  case object Variable extends SymbolKind
+  case object Constant extends SymbolKind
+  case object String extends SymbolKind
+  case object Number extends SymbolKind
+  case object Boolean extends SymbolKind
+  case object Array extends SymbolKind
 }
 
 /**

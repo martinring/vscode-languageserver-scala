@@ -1,5 +1,7 @@
 package net.flatmap.vscode.languageserver
 
+import java.net.URI
+
 import io.circe.Json
 import net.flatmap.jsonrpc._
 
@@ -56,7 +58,7 @@ object LanguageClient {
       *                    reported.
       * @param diagnostics An array of diagnostic information items
       */
-    def publishDiagnostics(uri: String, diagnostics: Seq[Diagnostic]): Unit
+    def publishDiagnostics(uri: URI, diagnostics: Seq[Diagnostic]): Unit
   }
 }
 

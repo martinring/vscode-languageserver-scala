@@ -10,6 +10,9 @@ package net.flatmap.vscode.languageserver
   */
 case class Position(line: Int, character: Int) extends Ordered[Position] {
   def compare(that: Position): Int = Position.ordering.compare(this,that)
+
+  override def toString: String =
+    s"($line,$character)"
 }
 
 object Position {

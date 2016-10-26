@@ -114,8 +114,8 @@ trait HoverProvider extends LanguageServer {
 }
 
 trait CompletionProvider extends LanguageServer {
-  def completionOptions: CompletionOptions
-   override def capabilities = super.capabilities.copy(completionProvider = Some(completionOptions))
+  def completionOptions: CompletionOptions = CompletionOptions()
+  override def capabilities = super.capabilities.copy(completionProvider = Some(completionOptions))
 
   /**
     * The Completion request is sent from the client to the server to
@@ -158,7 +158,7 @@ trait CompletionProvider extends LanguageServer {
 }
 
 trait SignatureHelpProvider extends LanguageServer {
-  def signatureHelpOptions: SignatureHelpOptions
+  def signatureHelpOptions: SignatureHelpOptions = SignatureHelpOptions()
   override def capabilities: ServerCapabilities = super.capabilities.copy(signatureHelpProvider = Some(signatureHelpOptions))
 
   /**
@@ -277,7 +277,7 @@ trait CodeActionProvider extends LanguageServer {
 }
 
 trait CodeLensProvider extends LanguageServer {
-  def codeLensOptions: CodeLensOptions
+  def codeLensOptions: CodeLensOptions = CodeLensOptions()
   override def capabilities: ServerCapabilities = super.capabilities.copy(codeLensProvider = Some(codeLensOptions))
 
   /**

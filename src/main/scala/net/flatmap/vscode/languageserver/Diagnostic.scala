@@ -10,13 +10,13 @@ object DiagnosticCode {
 sealed trait DiagnosticSeverity
 object DiagnosticSeverity {
   /** Reports an error. */
-  object Error extends DiagnosticSeverity
+  case object Error extends DiagnosticSeverity
   /** Reports a warning. */
-  object Warning extends DiagnosticSeverity
+  case object Warning extends DiagnosticSeverity
   /** Reports an information. */
-  object Information extends DiagnosticSeverity
+  case object Information extends DiagnosticSeverity
   /** Reports a hint. */
-  object Hint extends DiagnosticSeverity
+  case object Hint extends DiagnosticSeverity
 }
 
 /**

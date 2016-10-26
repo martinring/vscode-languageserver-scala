@@ -85,6 +85,9 @@ class Range private [languageserver] (val start: Position, val end: Position) {
     */
   def copy(start: Position = this.start, end: Position = this.end) =
   Range(start,end)
+
+  override def toString: String =
+    s"[${start.line},${start.character}->${end.line},${end.character}]"
 }
 
 object Range {

@@ -1,5 +1,5 @@
 name := "vscode-languageserver"
-version := "0.4.2"
+version := "0.4.5"
 organization := "net.flatmap"
 scalaVersion := "2.11.8"
 

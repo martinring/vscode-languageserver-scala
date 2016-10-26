@@ -7,15 +7,15 @@ package net.flatmap.vscode.languageserver
 sealed trait TextDocumentSyncKind
 object TextDocumentSyncKind {
   /** Documents should not be synced at all. */
-  object None extends TextDocumentSyncKind
+  case object None extends TextDocumentSyncKind
 
   /** Documents are synced by always sending the full content of the
     * document. */
-  object Full extends TextDocumentSyncKind
+  case object Full extends TextDocumentSyncKind
 
   /** Documents are synced by sending the full content on open. After that
     * only incremental updates to the document are sent. */
-  object Incremental extends TextDocumentSyncKind
+  case object Incremental extends TextDocumentSyncKind
 }
 
 /**

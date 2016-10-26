@@ -8,24 +8,24 @@ import io.circe.Json
   */
 sealed trait CompletionItemKind
 object CompletionItemKind {
-  object Text extends CompletionItemKind
-  object Method extends CompletionItemKind
-  object Function extends CompletionItemKind
-  object Constructor extends CompletionItemKind
-  object Field extends CompletionItemKind
-  object Variable extends CompletionItemKind
-  object Class extends CompletionItemKind
-  object Interface extends CompletionItemKind
-  object Module extends CompletionItemKind
-  object Property extends CompletionItemKind
-  object Unit extends CompletionItemKind
-  object Value extends CompletionItemKind
-  object Enum extends CompletionItemKind
-  object Keyword extends CompletionItemKind
-  object Snippet extends CompletionItemKind
-  object Color extends CompletionItemKind
-  object File extends CompletionItemKind
-  object Reference extends CompletionItemKind
+  case object Text extends CompletionItemKind
+  case object Method extends CompletionItemKind
+  case object Function extends CompletionItemKind
+  case object Constructor extends CompletionItemKind
+  case object Field extends CompletionItemKind
+  case object Variable extends CompletionItemKind
+  case object Class extends CompletionItemKind
+  case object Interface extends CompletionItemKind
+  case object Module extends CompletionItemKind
+  case object Property extends CompletionItemKind
+  case object Unit extends CompletionItemKind
+  case object Value extends CompletionItemKind
+  case object Enum extends CompletionItemKind
+  case object Keyword extends CompletionItemKind
+  case object Snippet extends CompletionItemKind
+  case object Color extends CompletionItemKind
+  case object File extends CompletionItemKind
+  case object Reference extends CompletionItemKind
 }
 
 /**

@@ -8,11 +8,11 @@ case class MessageActionItem(title: String)
 sealed trait MessageType
 object MessageType {
   /** An error message. */
-  object Error extends MessageType
+  case object Error extends MessageType
   /** A warning message */
-  object Warning extends MessageType
+  case object Warning extends MessageType
   /** An information message. */
-  object Info extends MessageType
+  case object Info extends MessageType
   /** A log message. */
-  object Log extends MessageType
+  case object Log extends MessageType
 }

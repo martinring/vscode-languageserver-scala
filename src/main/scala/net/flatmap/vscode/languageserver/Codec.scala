@@ -285,4 +285,28 @@ object Codec {
   implicit val encodeDocumentLink = deriveEncoder[DocumentLink]
   implicit val decodeDocumentLink = deriveDecoder[DocumentLink]
 
+  implicit val (
+    encodeTextDocumentSaveReason,
+    decodeTextDocumentSaveReason
+  ) = Enum[TextDocumentSaveReason](
+    TextDocumentSaveReason.Manual,
+    TextDocumentSaveReason.AfterDelay,
+    TextDocumentSaveReason.FocusOut
+  )
+
+  implicit val encodeDocumentFilter = Encoder.instance {
+    case DocumentFilter(Some(language),None,None) => Json.fromString(language)
+    case other: DocumentFilter => Json.obj(
+      "language" -> Json.
+      "scheme"   ->
+      "pattern"  ->
+    )
+  }
+  implicit val decodeDocumentFilter = deriveDecoder[DocumentFilter]
+
+  implicit val encodeDocumentSelector = deriveEncoder[DocumentSelector]
+  implicit val decodeDocumentSelector = deriveDecoder[DocumentSelector]
+
+  implicit val encodeDocumentOptions = deriveEncoder[DocumentOptions]
+  implicit val decodeDocumentOptions = deriveDecoder[DocumentOptions]
 }

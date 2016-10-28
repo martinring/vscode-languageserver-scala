@@ -58,7 +58,7 @@ trait LanguageServer {
     * @param textDocument The document that was opened.
     */
   @JsonRPC.Named("textDocument/didOpen")
-  def didOpen(textDocument: TextDocumentItem)
+  def didOpenDocument(textDocument: TextDocumentItem)
 
   /**
     * The document change notification is sent from the client to the
@@ -71,7 +71,7 @@ trait LanguageServer {
     * @param contentChanges The actual content changes.
     */
   @JsonRPC.Named("textDocument/didChange")
-  def didChange(textDocument: VersionedTextDocumentIdentifier,
+  def didChangeDocument(textDocument: VersionedTextDocumentIdentifier,
                 contentChanges: Seq[TextDocumentContentChangeEvent])
 
   /**
@@ -83,7 +83,7 @@ trait LanguageServer {
     * @param textDocument The document that was closed.
     */
   @JsonRPC.Named("textDocument/didClose")
-  def didClose(textDocument: TextDocumentIdentifier)
+  def didCloseDocument(textDocument: TextDocumentIdentifier)
 
   /**
     * The document save notification is sent from the client to the server
@@ -92,7 +92,7 @@ trait LanguageServer {
     * @param textDocument The document that was saved.
     */
   @JsonRPC.Named("textDocument/didSave")
-  def didSave(textDocument: TextDocumentIdentifier)
+  def didSaveDocument(textDocument: TextDocumentIdentifier)
 
   /**
     * The watched files notification is sent from the client to the server
@@ -109,4 +109,26 @@ trait LanguageServer {
     */
   @JsonRPC.Named("workspace/didChangeConfiguration")
   def didChangeConfiguration(settings: Json)
+
+  /**
+    * A document will save notification is sent from the client to the server before
+    * the document is actually saved.
+    *
+    * @param textDocument The document that will be saved.
+    * @param reason       The reason why a text document is saved.
+    */
+  @JsonRPC.Named("textDocument/willSave")
+  def willSaveDocument(textDocument: TextDocumentIdentifier,
+                       reason: TextDocumentSaveReason)
+
+  /**
+    * A document will save notification is sent from the client to the server before
+    * the document is actually saved.
+    *
+    * @param textDocument The document that will be saved.
+    * @param reason       The reason why a text document is saved.
+    */
+  @JsonRPC.Named("textDocument/willSaveWaitUntil")
+  def willSaveDocumentWaitUntil(textDocument: TextDocumentIdentifier,
+                                reason: TextDocumentSaveReason): Future[Seq[TextEdit]]
 }

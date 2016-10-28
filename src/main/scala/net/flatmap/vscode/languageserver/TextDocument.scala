@@ -190,3 +190,23 @@ case class VersionedTextDocumentIdentifier(uri: URI, version: Int)
 case class TextDocumentContentChangeEvent(text: String,
                                           range: Option[Range] = None,
                                           rangeLength: Option[Int] = None)
+
+/**
+  * Represents reasons why a text document is saved.
+  */
+sealed trait TextDocumentSaveReason
+object TextDocumentSaveReason {
+  /**
+    * Manually triggered, e.g. by the user pressing save, by starting debugging,
+    * or by an API call.
+    */
+  case object Manual extends TextDocumentSaveReason
+  /**
+    * Automatic after a delay.
+    */
+  case object AfterDelay extends TextDocumentSaveReason
+  /**
+    * When the editor lost focus.
+    */
+  case object FocusOut extends TextDocumentSaveReason
+}

@@ -14,4 +14,4 @@ import io.circe.Json
   */
 case class Command(title: String,
                    command: String,
-                   arguments: Option[Seq[Json]] = None)
+                   arguments: Seq[Json] = Seq.empty)

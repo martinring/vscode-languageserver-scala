@@ -2,6 +2,58 @@ package net.flatmap.vscode.languageserver
 
 import java.net.URI
 
+import scala.collection.mutable.ArrayBuffer
+
+/**
+  * A simple text document. Not to be implemenented.
+  */
+trait TextDocument {
+  /**
+    * The associated URI for this document. Most documents have the __file__-scheme, indicating that they
+    * represent files on disk. However, some documents may have other schemes indicating that they are not
+    * available on disk.
+    */
+  def uri: URI
+
+  /**
+    * The identifier of the language associated with this document.
+    */
+  def languageId: String
+
+  /**
+    * The version number of this document (it will strictly increase after each
+    * change, including undo/redo).
+    */
+  def version: Int
+
+  /**
+    * Get the text of this document.
+    */
+  def text: String
+
+  /**
+    * Converts a zero-based offset to a position.
+    *
+    * @param offset A zero-based offset.
+    * @return A valid [position](#Position).
+    */
+  def positionAt(offset: Int): Position
+
+  /**
+    * Converts the position to a zero-based offset.
+    *
+    * The position will be [adjusted](#TextDocument.validatePosition).
+    *
+    * @param position A position.
+    * @return A valid zero-based offset.
+    */
+  def offsetAt(position: Position): Int
+
+  /**
+    * The number of lines in this document.
+    */
+  def lineCount: Int
+}
 
 /**
   * Text documents are identified using a URI. On the protocol level, URIs
@@ -48,7 +100,7 @@ case class TextLine(lineNumber: Int,
 case class TextDocumentItem(uri: URI,
                             languageId: String,
                             version: Int,
-                            text: String) {
+                            text: String) extends TextDocument{
   def lines: Iterable[TextLine] =
     Util.unfold[TextLine,(String,Int)]((text,0)) {
       case ("",n) => None
@@ -59,6 +111,63 @@ case class TextDocumentItem(uri: URI,
           Some(TextLine(n,text.take(m.start),Range(n,0,n,m.start)), (text.drop(m.end), n+1))
         }
     }
+
+  private def isNewline(i: Int) =
+    if (i >= text.length) false else text.charAt(i) match {
+      case '\r' => (i + 1 == text.length) || text.charAt(i + 1) != '\n'
+      case x => x == '\n'
+    }
+
+  private lazy val lineIndices: Array[Int] = {
+    val buf = new ArrayBuffer[Int]
+    buf += 0
+    for (i <- 0 until text.length) if (isNewline(i)) buf += i + 1
+    buf += text.length // sentinel, so that findLine below works smoother
+    buf.toArray
+  }
+
+  private var lastLine = 0
+
+  /**
+    * Converts a zero-based offset to a position.
+    *
+    * @param offset A zero-based offset.
+    * @return A valid [position](#Position).
+    */
+  def positionAt(offset: Int): Position =
+    if (offset < 0) Position(0,0)
+    else if (offset >= text.length) Position(lineCount - 1, text.length - lineIndices(lineCount - 1))
+    else {
+      val lines = lineIndices
+      def findLine(lo: Int, hi: Int, mid: Int): Int =
+        if (offset < lines(mid))
+          findLine(lo, mid - 1, (lo + mid - 1) / 2)
+        else if (offset >= lines(mid + 1))
+          findLine(mid + 1, hi, (mid + 1 + hi) / 2)
+        else mid
+      lastLine = findLine(0,lines.length,lastLine)
+      val idx = lines(lastLine)
+      Position(lastLine, Math.max(0,Math.min(text.length - idx, offset - idx)))
+    }
+
+  /**
+    * Converts the position to a zero-based offset.
+    *
+    * The position will be [adjusted](#TextDocument.validatePosition).
+    *
+    * @param position A position.
+    * @return A valid zero-based offset.
+    */
+  def offsetAt(position: Position): Int =
+    if (position.line < 0) 0
+    else if (position.line >= lineIndices.length) text.length
+    else Math.min(text.length, lineIndices(position.line) + Math.max(0,position.character))
+
+
+  /**
+    * The number of lines in this document.
+    */
+  lazy val lineCount: Int = lineIndices.length - 1
 }
 
 /**

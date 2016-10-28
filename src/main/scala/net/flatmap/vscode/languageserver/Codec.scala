@@ -50,7 +50,11 @@ object Codec {
   implicit val decodeDiagnostic = deriveDecoder[Diagnostic]
 
   implicit val encodeCommand = deriveEncoder[Command]
-  implicit val decodeCommand = deriveDecoder[Command]
+  implicit val decodeCommand =
+    Decoder.forProduct3("title","command","arguments")(
+      (title: String, command: String, arguments: Option[Seq[Json]]) =>
+        Command(title,command,arguments.getOrElse(Seq.empty))
+    )
 
   implicit val encodeTextEdit = deriveEncoder[TextEdit]
   implicit val decodeTextEdit = deriveDecoder[TextEdit]
@@ -173,7 +177,15 @@ object Codec {
     Decoder.forProduct2("language","value")(MarkedString.apply)
 
   implicit val encodeHover = deriveEncoder[Hover]
-  implicit val decodeHover = deriveDecoder[Hover]
+  implicit val decodeHover =
+    Decoder.forProduct2("contents","range")(
+      (contents: MarkedString, range: Option[Range]) =>
+        Hover(Seq(contents),range)
+    ) or Decoder.forProduct2("contents","range")(
+      (contents: Seq[MarkedString], range: Option[Range]) =>
+        Hover(contents,range)
+    )
+
 
   implicit val encodeParameterInformation = deriveEncoder[ParameterInformation]
   implicit val decodeParameterInformation = deriveDecoder[ParameterInformation]
@@ -232,7 +244,33 @@ object Codec {
   implicit val encodeCodeActionContext = deriveEncoder[CodeActionContext]
   implicit val decodeCodeActionContext = deriveDecoder[CodeActionContext]
 
-  implicit val encodeFormattingOptions = deriveEncoder[FormattingOptions]
-  implicit val decodeFormattingOptions = deriveDecoder[FormattingOptions]
+  implicit val encodeFormattingOption =
+    Encoder.instance[FormattingOption] {
+      case FormattingOption.Boolean(b) => Json.fromBoolean(b)
+      case FormattingOption.Number(n) => Json.fromJsonNumber(n)
+      case FormattingOption.String(s) => Json.fromString(s)
+    }
+  implicit val decodeFormattingOption =
+    Decoder.decodeJsonNumber.map[FormattingOption](FormattingOption.Number) or
+    Decoder.decodeString.map[FormattingOption](FormattingOption.String) or
+    Decoder.decodeBoolean.map[FormattingOption](FormattingOption.Boolean)
+
+  implicit val encodeFormattingOptions =
+    Encoder.instance[FormattingOptions](f => Json.obj(
+      (Map("tabSize" -> Json.fromInt(f.tabSize),
+      "insertSpaces" -> Json.fromBoolean(f.insertSpaces)) ++
+      f.furtherProperties.mapValues(encodeFormattingOption.apply)).toSeq :_*
+    ))
+  implicit val decodeFormattingOptions = {
+    val base = Decoder.forProduct2("tabSize", "insertSpaces")((t: Int, i: Boolean) => (t, i)) and
+      Decoder[Map[String,FormattingOption]]
+    base.map {
+      case ((tabSize,insertSpaces),further) =>
+        FormattingOptions(tabSize,insertSpaces,further)
+    }
+  }
+
+  implicit val encodeDocumentLink = deriveEncoder[DocumentLink]
+  implicit val decodeDocumentLink = deriveDecoder[DocumentLink]
 
 }

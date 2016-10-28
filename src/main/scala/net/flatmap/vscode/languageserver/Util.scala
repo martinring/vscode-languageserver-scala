@@ -8,16 +8,22 @@ object Util {
 
   def unfold[A,B](seed: B)(f: B => Option[(A,B)]): Iterable[A] = new Iterable[A] {
     def iterator: Iterator[A] = new Iterator[A] {
+      private var done = false
       private var state = seed
       private var nextComputed = Option.empty[(A, B)]
 
-      def hasNext: Boolean = nextComputed.isDefined || {
+      def hasNext: Boolean = !done && (nextComputed.isDefined || {
         nextComputed = f(state)
         nextComputed.foreach(x => state = x._2)
-        nextComputed.isDefined
-      }
+        done = !nextComputed.isDefined
+        !done
+      })
 
-      def next(): A = if (hasNext) nextComputed.get._1 else
+      def next(): A = if (hasNext) {
+        val res = nextComputed.get._1
+        nextComputed = None
+        res
+      } else
         throw new IndexOutOfBoundsException()
     }
   }

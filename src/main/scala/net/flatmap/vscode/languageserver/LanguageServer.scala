@@ -9,6 +9,9 @@ trait LanguageServer {
   def textDocumentSyncKind: TextDocumentSyncKind = TextDocumentSyncKind.None
   def capabilities: ServerCapabilities= ServerCapabilities(Some(textDocumentSyncKind))
 
+  @JsonRPC.Named("$/setTraceNotification")
+  def setTrace(trace: Trace): Unit
+
   /**
     * The initialize request is sent as the first request from the client to
     * the server.
@@ -22,12 +25,13 @@ trait LanguageServer {
     *                  open.
     * @param initializationOptions User provided initialization options.
     * @param capabilities The capabilities provided by the client (editor)
+    * @param trace        The initial trace setting. If omitted trace is disabled ('off').
     */
   def initialize(processId: Option[Int],
                  rootPath: Option[String],
                  initializationOptions: Option[Json],
                  capabilities: ClientCapabilities,
-                 trace: Option[Trace]): Future[InitializeResult]
+                 trace: Trace = Trace.Off): Future[InitializeResult]
 
   /** The shutdown request is sent from the client to the server. It asks the
     * server to shut down, but to not exit (otherwise the response might not be

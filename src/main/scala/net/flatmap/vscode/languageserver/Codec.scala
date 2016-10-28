@@ -2,6 +2,7 @@ package net.flatmap.vscode.languageserver
 
 import java.net.URI
 
+import cats.data.Xor
 import io.circe._
 import io.circe.generic.semiauto._
 
@@ -13,6 +14,19 @@ import scala.util.Try
 object Codec {
   implicit val encodeURI = Encoder.encodeString.contramap((uri: URI) => uri.toString)
   implicit val decodeURI = Decoder.decodeString.map(URI.create)
+
+  implicit val encodeTrace = Encoder.instance[Trace] {
+    case Trace.Off => Json.fromString("off")
+    case Trace.Messages => Json.fromString("messages")
+    case Trace.Verbose => Json.fromString("verbose")
+  }
+  implicit val decodeTrace =
+    Decoder.decodeString.emap {
+      case "off" => Xor.right(Trace.Off)
+      case "messages" => Xor.right(Trace.Messages)
+      case "verbose" => Xor.right(Trace.Verbose)
+      case other => Xor.left(s"invalid value for trace: '$other'")
+    }
 
   implicit val uriKeyEncoder = KeyEncoder.instance[URI](_.toString)
   implicit val uriKeyDecoder = KeyDecoder.instance[URI](s => Try(URI.create(s)).toOption)

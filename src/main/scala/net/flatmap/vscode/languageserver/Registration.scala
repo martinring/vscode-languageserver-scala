@@ -1,8 +1,8 @@
 package net.flatmap.vscode.languageserver
 
-import javax.swing.text.DocumentFilter
+import akka.actor.Cancellable
 
-import net.flatmap.jsonrpc.JsonRPC
+import scala.concurrent.{ExecutionContext, Future}
 
 case class DocumentFilter(language: Option[String],
                           scheme: Option[String],
@@ -19,8 +19,40 @@ case class DocumentSelector(filters: DocumentFilter*)
 case class DocumentOptions(selector: Option[DocumentSelector])
 
 trait Registration {
-  @JsonRPC.Named("client/registrationRequest")
   def register(id: String,
                method: String,
                registerOptions: DocumentOptions)
+              (implicit ec: ExecutionContext): Future[Cancellable] =
+    registrationRequest(id,method,registerOptions).map { x =>
+      new Cancellable {
+        private var cancelled = false
+        def isCancelled: Boolean = cancelled
+        def cancel(): Boolean = {
+          unregistrationRequest(id,method).map(_ => cancelled = true)
+          true
+        }
+      }
+    }
+
+  /**
+    * Register the given request or notification on the other side. Since requests can be sent from the client
+    * to the server and vice versa this request can be sent into both directions.
+    *
+    * @param id              The id used to register the request.
+    *                        The id can be used to deregister the request again.
+    * @param method          The method to register for.
+    * @param registerOptions Options necessary for the registration.
+    */
+  def registrationRequest(id: String,
+                          method: String,
+                          registerOptions: DocumentOptions): Future[Unit]
+
+  /**
+    * Unregisters the given request on the other side.
+    * @param id  The id used to unregister the request or notification. Usually an id
+    *            provided during the register request.
+    * @param method The method to unregister for.
+    */
+  def unregistrationRequest(id: String,
+                            method: String): Future[Unit]
 }

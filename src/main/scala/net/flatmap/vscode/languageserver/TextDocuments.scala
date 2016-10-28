@@ -128,20 +128,20 @@ trait TextDocuments extends LanguageServer {
     }
   }
 
-  override def didOpen(textDocument: TextDocumentItem): Unit = {
+  override def didOpenDocument(textDocument: TextDocumentItem): Unit = {
     DocumentPublisher.open(textDocument)
   }
 
-  override def didChange(textDocument: VersionedTextDocumentIdentifier,
+  override def didChangeDocument(textDocument: VersionedTextDocumentIdentifier,
                 contentChanges: Seq[TextDocumentContentChangeEvent]): Unit = {
     DocumentPublisher.change(textDocument,contentChanges)
   }
 
-  override def didSave(textDocument: TextDocumentIdentifier): Unit = {
+  override def didSaveDocument(textDocument: TextDocumentIdentifier): Unit = {
     // TODO: Signal Save events
   }
 
-  override def didClose(textDocument: TextDocumentIdentifier): Unit = {
+  override def didCloseDocument(textDocument: TextDocumentIdentifier): Unit = {
     DocumentPublisher.close(textDocument.uri)
   }
 }

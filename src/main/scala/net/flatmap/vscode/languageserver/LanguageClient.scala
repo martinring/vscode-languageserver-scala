@@ -69,4 +69,7 @@ trait LanguageClient {
 
   @JsonRPC.Namespace("textDocument/")
   def textDocument: LanguageClient.TextDocument
+
+  @JsonRPC.Namespace("client/")
+  def client: Registration
 }

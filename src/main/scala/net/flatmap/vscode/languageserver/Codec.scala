@@ -112,6 +112,9 @@ object Codec {
   implicit val encodeDocumentOnTypeFormattingOptions = deriveEncoder[DocumentOnTypeFormattingOptions]
   implicit val decodeDocumentOnTypeFormattingOptions = deriveDecoder[DocumentOnTypeFormattingOptions]
 
+  implicit val encodeLinkOptions = deriveEncoder[DocumentLinkOptions]
+  implicit val decodeLinkOptions = deriveDecoder[DocumentLinkOptions]
+
   implicit val encodeServerCapabilities = deriveEncoder[ServerCapabilities]
   implicit val decodeServerCapabilities = deriveDecoder[ServerCapabilities]
 
@@ -294,18 +297,25 @@ object Codec {
     TextDocumentSaveReason.FocusOut
   )
 
-  implicit val encodeDocumentFilter = Encoder.instance {
+  implicit val encodeDocumentFilter = Encoder.instance[DocumentFilter] {
     case DocumentFilter(Some(language),None,None) => Json.fromString(language)
-    case other: DocumentFilter => Json.obj(
-      "language" -> Json.
-      "scheme"   ->
-      "pattern"  ->
+    case other => Json.obj(
+      "language" -> other.language.fold(Json.Null)(Json.fromString),
+      "scheme"   -> other.language.fold(Json.Null)(Json.fromString),
+      "pattern"  -> other.language.fold(Json.Null)(Json.fromString)
     )
   }
-  implicit val decodeDocumentFilter = deriveDecoder[DocumentFilter]
+  implicit val decodeDocumentFilter: Decoder[DocumentFilter] =
+    Decoder.decodeString.map[DocumentFilter](DocumentFilter.language) or
+    Decoder.forProduct3("language","scheme","pattern")(DocumentFilter.apply)
 
-  implicit val encodeDocumentSelector = deriveEncoder[DocumentSelector]
-  implicit val decodeDocumentSelector = deriveDecoder[DocumentSelector]
+  implicit val encodeDocumentSelector = Encoder.instance[DocumentSelector] {
+    case DocumentSelector(single) => encodeDocumentFilter(single)
+    case DocumentSelector(multiple @ _*) => Encoder[Seq[DocumentFilter]].apply(multiple)
+  }
+  implicit val decodeDocumentSelector =
+    decodeDocumentFilter.map[DocumentSelector](filter => DocumentSelector(filter)) or
+    Decoder[Seq[DocumentFilter]].map[DocumentSelector](DocumentSelector.apply)
 
   implicit val encodeDocumentOptions = deriveEncoder[DocumentOptions]
   implicit val decodeDocumentOptions = deriveDecoder[DocumentOptions]

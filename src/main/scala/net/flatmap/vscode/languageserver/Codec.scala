@@ -21,7 +21,7 @@ object Codec {
     case Trace.Verbose => Json.fromString("verbose")
   }
   implicit val decodeTrace =
-    Decoder.decodeString.emap {
+    Decoder.decodeString.emap[Trace] {
       case "off" => Xor.right(Trace.Off)
       case "messages" => Xor.right(Trace.Messages)
       case "verbose" => Xor.right(Trace.Verbose)

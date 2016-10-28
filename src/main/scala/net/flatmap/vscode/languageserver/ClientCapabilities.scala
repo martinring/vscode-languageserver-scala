@@ -1,6 +1,6 @@
 package net.flatmap.vscode.languageserver
 
-sealed trait ClientCapabilities
-object ClientCapabilities {
-  object Default extends ClientCapabilities
-}
+case class ClientCapabilities(
+  willSaveTextDocumentNotification: Option[Boolean] = None,
+  willSaveTextDocumentProvider: Option[Boolean] = None
+)

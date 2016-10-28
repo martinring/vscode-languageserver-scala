@@ -57,6 +57,12 @@ case class DocumentOnTypeFormattingOptions(
   moreTriggerCharacter: Option[Seq[String]] = None)
 
 /**
+  * Document link options
+  * @param resolveProvider Document links have a resolve provider as well.
+  */
+case class DocumentLinkOptions(resolveProvider: Option[Boolean] = None)
+
+/**
   * The server can signal the following capabilities
   * @param textDocumentSync                 Defines how text documents are
   *                                         synced.
@@ -84,6 +90,7 @@ case class DocumentOnTypeFormattingOptions(
   * @param documentOnTypeFormattingProvider The server provides document
   *                                         formatting on typing.
   * @param renameProvider                   The server provides rename support.
+  * @param documentLinkProvider             The server provides document link support.
   */
 case class ServerCapabilities(
   textDocumentSync: Option[TextDocumentSyncKind] = None,
@@ -100,7 +107,8 @@ case class ServerCapabilities(
   documentFormattingProvider: Option[Boolean] = None,
   documentRangeFormattingProvider: Option[Boolean] = None,
   documentOnTypeFormattingProvider: Option[DocumentOnTypeFormattingOptions] = None,
-  renameProvider: Option[Boolean] = None)
+  renameProvider: Option[Boolean] = None,
+  documentLinkProvider: Option[DocumentLinkOptions] = None)
 
 /**
   * @param retry Indicates whether the client should retry to send the
@@ -388,5 +396,19 @@ object ServerCapabilities {
                position: Position,
                newName: String)
 
+  }
+
+  trait DocumentLinkProvider extends LanguageServer {
+    def documentLinkOptions = DocumentLinkOptions()
+
+    override def capabilities = super.capabilities.copy(
+      documentLinkProvider = Some(documentLinkOptions))
+
+    @JsonRPC.Named("textDocument/documentLink")
+    def documentLink(textDocument: TextDocumentIdentifier): Future[Seq[DocumentLink]]
+
+    @JsonRPC.Named("documentLink/resolve")
+    @JsonRPC.SpreadParam
+    def resolveDocumentLink(link: DocumentLink): Future[DocumentLink]
   }
 }

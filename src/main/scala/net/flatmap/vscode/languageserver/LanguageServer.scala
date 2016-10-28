@@ -26,7 +26,8 @@ trait LanguageServer {
   def initialize(processId: Option[Int],
                  rootPath: Option[String],
                  initializationOptions: Option[Json],
-                 capabilities: ClientCapabilities): Future[InitializeResult]
+                 capabilities: ClientCapabilities,
+                 trace: Option[Trace]): Future[InitializeResult]
 
   /** The shutdown request is sent from the client to the server. It asks the
     * server to shut down, but to not exit (otherwise the response might not be

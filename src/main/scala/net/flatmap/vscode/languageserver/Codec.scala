@@ -71,10 +71,8 @@ object Codec {
   implicit val encodeVersionedTextDocumentIdentifier = deriveEncoder[VersionedTextDocumentIdentifier]
   implicit val decodeVersionedTextDocumentIdentifier = deriveDecoder[VersionedTextDocumentIdentifier]
 
-  implicit val encodeClientCapabilities =
-    Encoder.instance[ClientCapabilities](_ => Json.obj())
-  implicit val decodeClientCapabilities =
-    Decoder.const[ClientCapabilities](ClientCapabilities.Default)
+  implicit val encodeClientCapabilities = deriveEncoder[ClientCapabilities]
+  implicit val decodeClientCapabilities = deriveDecoder[ClientCapabilities]
 
   implicit val encodeInitializeError = deriveEncoder[InitializeError]
   implicit val decodeInitializeError = deriveDecoder[InitializeError]

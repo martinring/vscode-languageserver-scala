@@ -73,4 +73,24 @@ class TextDocumentSpec extends FunSuite with Matchers {
     lm.positionAt(str.length) shouldBe Position(0,str.length)
     lm.positionAt(str.length + 3) shouldBe Position(0,str.length)
   }
+
+  test("Lines") {
+    val str = "ABCDE\nFGHIJ\nKLMNO\n"
+    val lm = newDocument(str)
+
+    lm.lineAt(-1) shouldBe None
+    lm.lineAt(0).get.text shouldBe "ABCDE"
+    lm.lineAt(1).get.text shouldBe "FGHIJ"
+    lm.lineAt(2).get.text shouldBe "KLMNO"
+    lm.lineAt(3).get.text shouldBe ""
+    lm.lineAt(4) shouldBe None
+
+    lm.lineAt(0).get.range shouldBe Range(Position(0,0),Position(0,5))
+    lm.lineAt(1).get.range shouldBe Range(Position(1,0),Position(1,5))
+    lm.lineAt(2).get.range shouldBe Range(Position(2,0),Position(2,5))
+    lm.lineAt(3).get.range shouldBe Range(Position(3,0),Position(3,0))
+
+    lm.lineAt(3).get.rangeIncludingLineBreak shouldBe Range(Position(3,0),Position(3,0))
+
+  }
 }

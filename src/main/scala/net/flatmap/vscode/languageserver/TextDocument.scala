@@ -72,10 +72,12 @@ case class TextDocumentIdentifier(uri: URI)
   * @param lineNumber The zero-based line number.
   * @param text       The text of this line without the line separator characters.
   * @param range      The range this line covers without the line separator characters.
+  * @param rangeIncludingLineBreak The range this line covers with the line separator characters.
   */
 case class TextLine(lineNumber: Int,
                     text: String,
-                    range: Range) {
+                    range: Range,
+                    rangeIncludingLineBreak: Range) {
   /**
     * The offset of the first character which is not a whitespace character as defined
     * by `/\s/`. **Note** that if a line is all whitespaces the length of the line is returned.
@@ -100,17 +102,51 @@ case class TextLine(lineNumber: Int,
 case class TextDocumentItem(uri: URI,
                             languageId: String,
                             version: Int,
-                            text: String) extends TextDocument{
-  def lines: Iterable[TextLine] =
-    Util.unfold[TextLine,(String,Int)]((text,0)) {
-      case ("",n) => None
-      case (text,n) =>
-        Util.lineBreak.findFirstMatchIn(text).fold {
-          Some(TextLine(n,text,Range(n,0,n,text.length)), ("", n+1))
-        } { case m =>
-          Some(TextLine(n,text.take(m.start),Range(n,0,n,m.start)), (text.drop(m.end), n+1))
-        }
+                            text: String) extends TextDocument {
+  /*def lines = text.lines.zipWithIndex.map {
+    case (text,n) =>
+      TextLine(
+        n,
+        text,
+        Range(Position(n,0),Position(n,text.length)))
+  }*/
+
+  private lazy val lines = text.lines.toArray :+ ""
+
+  /**
+    * Returns a text line denoted by the line number. Note
+    * that the returned object is *not* live and changes to the
+    * document are not reflected.
+    *
+    * @param line A line number in [0, lineCount).
+    * @return A [line](#TextLine).
+    */
+  def lineAt(line: Int): Option[TextLine] = {
+    if (line < 0 || line >= lineCount) None
+    else {
+      val lineText = lines(line)
+      Some(TextLine(
+        lineNumber = line,
+        text = lineText,
+        range = Range(Position(line,0),Position(line,lineText.length)),
+        rangeIncludingLineBreak = Range(Position(line,0),validatePosition(Position(line + 1,0)))
+      ))
     }
+  }
+
+  /**
+    * Returns a text line denoted by the position. Note
+    * that the returned object is *not* live and changes to the
+    * document are not reflected.
+    *
+    * The position will be [adjusted](#TextDocument.validatePosition).
+    *
+    * @see [TextDocument.lineAt](#TextDocument.lineAt)
+    * @param position A position.
+    * @return A [line](#TextLine).
+    */
+  def lineAt(position: Position): TextLine =
+    lineAt(validatePosition(position).line).get
 
   private def isNewline(i: Int) =
     if (i >= text.length) false else text.charAt(i) match {
@@ -158,16 +194,47 @@ case class TextDocumentItem(uri: URI,
     * @param position A position.
     * @return A valid zero-based offset.
     */
-  def offsetAt(position: Position): Int =
-    if (position.line < 0) 0
-    else if (position.line >= lineIndices.length) text.length
-    else Math.min(text.length, lineIndices(position.line) + Math.max(0,position.character))
-
+  def offsetAt(position: Position): Int = {
+    val validated = validatePosition(position)
+    lineIndices(validated.line) + validated.character
+  }
 
   /**
     * The number of lines in this document.
     */
   lazy val lineCount: Int = lineIndices.length - 1
+
+  /**
+    * Ensure a range is completely contained in this document.
+    *
+    * @param range A range.
+    * @return The given range or a new, adjusted range.
+    */
+  def validateRange(range: Range): Range =
+    range.copy(
+      start = validatePosition(range.start),
+      end = validatePosition(range.end))
+
+  /**
+    * Ensure a position is contained in the range of this document.
+    *
+    * @param position A position.
+    * @return The given position or a new, adjusted position.
+    */
+  def validatePosition(position: Position): Position = {
+    if (position.line < 0)
+      Position(0,0)
+    else if (position.line >= lineCount)
+      Position(lineCount - 1, text.length - lineIndices(lineCount - 1))
+    else {
+      if (position.character < 0) Position(position.line,0)
+      else {
+        val lineLength = lines(position.line).length
+        if (position.character >= lineLength) position.copy(character = lineLength)
+        else position
+      }
+    }
+  }
 }
 
 /**

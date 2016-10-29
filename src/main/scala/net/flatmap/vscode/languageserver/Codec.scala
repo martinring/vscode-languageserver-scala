@@ -12,6 +12,19 @@ import scala.util.Try
   * Created by martin on 22/10/2016.
   */
 object Codec {
+  implicit def decodeBoolean =
+    Decoder[Option[Boolean]].map(_.fold(false)(identity))
+
+  implicit def encodeSeqOptional[T](implicit e: Encoder[T]) =
+    Encoder[Option[Seq[T]]].contramap[Seq[T]] {
+      case Seq() => None
+      case nonEmpty => Some(nonEmpty)
+    }
+
+  implicit def decodeSeqOptional[T](implicit d: Decoder[T]) =
+    Decoder[Option[Seq[T]]]
+      .map(_.fold(Seq.empty[T])(identity))
+
   implicit val encodeURI = Encoder.encodeString.contramap((uri: URI) => uri.toString)
   implicit val decodeURI = Decoder.decodeString.map(URI.create)
 
@@ -64,11 +77,7 @@ object Codec {
   implicit val decodeDiagnostic = deriveDecoder[Diagnostic]
 
   implicit val encodeCommand = deriveEncoder[Command]
-  implicit val decodeCommand =
-    Decoder.forProduct3("title","command","arguments")(
-      (title: String, command: String, arguments: Option[Seq[Json]]) =>
-        Command(title,command,arguments.getOrElse(Seq.empty))
-    )
+  implicit val decodeCommand = deriveDecoder[Command]
 
   implicit val encodeTextEdit = deriveEncoder[TextEdit]
   implicit val decodeTextEdit = deriveDecoder[TextEdit]

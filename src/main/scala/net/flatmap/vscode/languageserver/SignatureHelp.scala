@@ -20,7 +20,7 @@ case class ParameterInformation(label: String,
   */
 case class SignatureInformation(label: String,
                                 documentation: Option[String],
-                                parameters: Option[Seq[ParameterInformation]])
+                                parameters: Seq[ParameterInformation])
 
 
 /**

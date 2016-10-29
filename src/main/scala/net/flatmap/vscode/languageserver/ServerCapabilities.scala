@@ -30,21 +30,21 @@ object TextDocumentSyncKind {
   * @param triggerCharacters The characters that trigger completion
   *                          automatically.
   */
-case class CompletionOptions(resolveProvider: Option[Boolean] = None,
-                             triggerCharacters: Option[Seq[String]] = None)
+case class CompletionOptions(resolveProvider: Boolean = false,
+                             triggerCharacters: Seq[String] = Seq.empty)
 
 /**
   * Signature help options.
   * @param triggerCharacters The characters that trigger signature help
   *                          automatically.
   */
-case class SignatureHelpOptions(triggerCharacters: Option[Seq[String]] = None)
+case class SignatureHelpOptions(triggerCharacters: Seq[String] = Seq.empty)
 
 /**
   * Code Lens options.
   * @param resolveProvider Code lens has a resolve provider as well.
   */
-case class CodeLensOptions(resolveProvider: Option[Boolean] = None)
+case class CodeLensOptions(resolveProvider: Boolean = false)
 
 /**
   * Format document on type options
@@ -54,13 +54,13 @@ case class CodeLensOptions(resolveProvider: Option[Boolean] = None)
   */
 case class DocumentOnTypeFormattingOptions(
   firstTriggerCharacter: String,
-  moreTriggerCharacter: Option[Seq[String]] = None)
+  moreTriggerCharacter: Seq[String] = Seq.empty)
 
 /**
   * Document link options
   * @param resolveProvider Document links have a resolve provider as well.
   */
-case class DocumentLinkOptions(resolveProvider: Option[Boolean] = None)
+case class DocumentLinkOptions(resolveProvider: Boolean = false)
 
 /**
   * The server can signal the following capabilities
@@ -94,20 +94,20 @@ case class DocumentLinkOptions(resolveProvider: Option[Boolean] = None)
   */
 case class ServerCapabilities(
   textDocumentSync: Option[TextDocumentSyncKind] = None,
-  hoverProvider: Option[Boolean] = None,
+  hoverProvider: Boolean = false,
   completionProvider: Option[CompletionOptions] = None,
   signatureHelpProvider: Option[SignatureHelpOptions] = None,
-  definitionProvider: Option[Boolean] = None,
-  referenceProvider: Option[Boolean] = None,
-  documentHighlightProvider: Option[Boolean] = None,
-  documentSymbolProvider: Option[Boolean] = None,
-  workspaceSymbolProvider: Option[Boolean] = None,
-  codeActionProvider: Option[Boolean] = None,
+  definitionProvider: Boolean = false,
+  referenceProvider: Boolean = false,
+  documentHighlightProvider: Boolean = false,
+  documentSymbolProvider: Boolean = false,
+  workspaceSymbolProvider: Boolean = false,
+  codeActionProvider: Boolean = false,
   codeLensProvider: Option[CodeLensOptions] = None,
-  documentFormattingProvider: Option[Boolean] = None,
-  documentRangeFormattingProvider: Option[Boolean] = None,
+  documentFormattingProvider: Boolean = false,
+  documentRangeFormattingProvider: Boolean = false,
   documentOnTypeFormattingProvider: Option[DocumentOnTypeFormattingOptions] = None,
-  renameProvider: Option[Boolean] = None,
+  renameProvider: Boolean = false,
   documentLinkProvider: Option[DocumentLinkOptions] = None)
 
 /**
@@ -124,7 +124,7 @@ case class InitializeResult(capabilities: ServerCapabilities)
 
 object ServerCapabilities {
   trait HoverProvider extends LanguageServer {
-    override def capabilities = super.capabilities.copy(hoverProvider = Some(true))
+    override def capabilities = super.capabilities.copy(hoverProvider = true)
 
     /**
       * The hover request is sent from the client to the server to request
@@ -193,7 +193,7 @@ object ServerCapabilities {
   }
 
   trait DefinitionProvider extends LanguageServer {
-    override def capabilities = super.capabilities.copy(definitionProvider = Some(true))
+    override def capabilities = super.capabilities.copy(definitionProvider = true)
 
     /**
       * The goto definition request is sent from the client to the server to
@@ -209,7 +209,7 @@ object ServerCapabilities {
   }
 
   trait ReferenceProvider extends LanguageServer {
-    override def capabilities = super.capabilities.copy(renameProvider = Some(true))
+    override def capabilities = super.capabilities.copy(renameProvider = true)
 
     /**
       * The goto definition request is sent from the client to the server to
@@ -228,7 +228,7 @@ object ServerCapabilities {
   }
 
   trait DocumentHighlightProvider extends LanguageServer {
-    override def capabilities = super.capabilities.copy(documentHighlightProvider = Some(true))
+    override def capabilities = super.capabilities.copy(documentHighlightProvider = true)
 
     /**
       * The document highlight request is sent from the client to the server
@@ -250,7 +250,7 @@ object ServerCapabilities {
   }
 
   trait DocumentSymbolProvider extends LanguageServer {
-    override def capabilities = super.capabilities.copy(documentSymbolProvider = Some(true))
+    override def capabilities = super.capabilities.copy(documentSymbolProvider = true)
 
     /**
       * The document symbol request is sent from the client to the server to
@@ -264,7 +264,7 @@ object ServerCapabilities {
   }
 
   trait WorkspaceSymbolProvider extends LanguageServer {
-    override def capabilities = super.capabilities.copy(workspaceSymbolProvider = Some(true))
+    override def capabilities = super.capabilities.copy(workspaceSymbolProvider = true)
 
     /**
       * The workspace symbol request is sent from the client to the server to
@@ -277,7 +277,7 @@ object ServerCapabilities {
   }
 
   trait CodeActionProvider extends LanguageServer {
-    override def capabilities = super.capabilities.copy(codeActionProvider = Some(true))
+    override def capabilities = super.capabilities.copy(codeActionProvider = true)
 
 
     /**
@@ -321,7 +321,7 @@ object ServerCapabilities {
   }
 
   trait DocumentFormattingProvider extends LanguageServer {
-    override def capabilities = super.capabilities.copy(documentFormattingProvider = Some(true))
+    override def capabilities = super.capabilities.copy(documentFormattingProvider = true)
 
 
     /**
@@ -337,7 +337,7 @@ object ServerCapabilities {
   }
 
   trait DocumentRangeFormattingProvider extends LanguageServer {
-    override def capabilities = super.capabilities.copy(documentRangeFormattingProvider = Some(true))
+    override def capabilities = super.capabilities.copy(documentRangeFormattingProvider = true)
 
 
     /**
@@ -378,7 +378,7 @@ object ServerCapabilities {
   }
 
   trait RenameProvider extends LanguageServer {
-    override def capabilities = super.capabilities.copy(renameProvider = Some(true))
+    override def capabilities = super.capabilities.copy(renameProvider = true)
 
     /**
       * The rename request is sent from the client to the server to perform a
